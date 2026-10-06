@@ -124,3 +124,4 @@ The Medusa Admin runs at `http://localhost:9000/app`. To run only one app, use `
 - [Medusa Documentation](https://docs.medusajs.com)
 - [Storefront Development](https://docs.medusajs.com/resources/storefront-development)
 - [Deploy to Medusa Cloud](https://docs.medusajs.com/cloud)
+
