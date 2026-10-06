@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="#0f172a"/>
+  <g transform="translate(44, 0)">
+    <!-- Forklift body (main chassis) -->
+    <rect x="160" y="230" width="200" height="110" rx="12" fill="#0d9488"/>
+    <!-- Cab / operator compartment -->
+    <rect x="290" y="170" width="70" height="70" rx="10" fill="#0d9488"/>
+    <!-- Cab window cutout -->
+    <rect x="302" y="182" width="46" height="46" rx="6" fill="#0f172a"/>
+    <!-- Counterweight bump at rear -->
+    <rect x="340" y="270" width="30" height="50" rx="8" fill="#0a7a70"/>
+    <!-- Mast (vertical uprights) -->
+    <rect x="112" y="110" width="22" height="220" rx="5" fill="#0d9488"/>
+    <rect x="152" y="110" width="22" height="220" rx="5" fill="#0d9488"/>
+    <!-- Carriage cross-bar on mast -->
+    <rect x="108" y="195" width="70" height="18" rx="4" fill="#0a7a70"/>
+    <!-- Fork tines (horizontal, pointing left) -->
+    <rect x="54" y="325" width="112" height="16" rx="4" fill="#0d9488"/>
+    <rect x="54" y="355" width="112" height="16" rx="4" fill="#0d9488"/>
+    <!-- Front wheel -->
+    <circle cx="210" cy="360" r="38" fill="#0f172a" stroke="#0d9488" stroke-width="14"/>
+    <circle cx="210" cy="360" r="12" fill="#0d9488"/>
+    <!-- Rear wheel -->
+    <circle cx="330" cy="360" r="28" fill="#0f172a" stroke="#0d9488" stroke-width="12"/>
+    <circle cx="330" cy="360" r="9" fill="#0d9488"/>
+    <!-- Ground line -->
+    <rect x="50" y="395" width="380" height="10" rx="5" fill="#0d9488" opacity="0.4"/>
+  </g>
+</svg>

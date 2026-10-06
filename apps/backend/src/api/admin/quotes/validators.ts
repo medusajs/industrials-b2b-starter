@@ -1,0 +1,21 @@
+import { createFindParams } from "@medusajs/medusa/api/utils/validators"
+import { z } from "@medusajs/framework/zod"
+
+export const AdminGetQuoteParams = createFindParams({
+  limit: 15,
+  offset: 0,
+}).strict()
+
+export type AdminSendQuoteType = z.infer<typeof AdminSendQuote>
+export const AdminSendQuote = z.object({}).strict()
+
+export type AdminRejectQuoteType = z.infer<typeof AdminRejectQuote>
+export const AdminRejectQuote = z.object({}).strict()
+
+export type AdminCreateQuoteMessageType = z.infer<typeof AdminCreateQuoteMessage>
+export const AdminCreateQuoteMessage = z
+  .object({
+    text: z.string(),
+    item_id: z.string().nullish(),
+  })
+  .strict()

@@ -1,0 +1,35 @@
+{
+  "name": "ai-template",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "start": "turbo start",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "backend:dev": "turbo dev --filter=backend",
+    "storefront:dev": "turbo dev --filter=storefront"
+  },
+  "devDependencies": {
+    "@medusajs/eslint-plugin": "2.21.2",
+    "eslint": "^9.0.0",
+    "jiti": "^2.4.2",
+    "prettier": "^3.2.5",
+    "turbo": "^2.0.14",
+    "tsx": "^4.19.2"
+  },
+  "packageManager": "pnpm@10.12.3",
+  "engines": {
+    "node": ">=22.22.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "19.1.1",
+      "react-dom": "19.1.1"
+    }
+  },
+  "dependencies": {
+    "stripe": "^20.4.0"
+  }
+}
