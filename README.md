@@ -94,6 +94,20 @@ pnpm dev
 
 The Medusa Admin runs at `http://localhost:9000/app`. To run only one app, use `pnpm backend:dev` or `pnpm storefront:dev`.
 
+## Project Structure
+
+```
+apps/
+├── backend/      # Medusa server, admin extensions, company and quote modules
+│   ├── medusa-config.ts
+│   ├── integration-tests/
+│   └── src/      # api, workflows, modules, links, admin, migration-scripts
+└── storefront/   # TanStack Start storefront (Vite, Tailwind)
+    └── src/      # routes, pages, components, lib/data
+```
+
+The repo is a pnpm workspace orchestrated by [Turborepo](https://turborepo.com).
+
 ## Configuration
 
 ### Backend
@@ -119,9 +133,28 @@ The Medusa Admin runs at `http://localhost:9000/app`. To run only one app, use `
 | `VITE_MEDUSA_PUBLISHABLE_KEY` | Publishable API key of the store's sales channel |
 | `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key, required when Stripe is enabled |
 
+## Building with AI Agents
+
+- [`AGENTS.md`](./AGENTS.md) maps common tasks to paths in this repo, lists the real commands, and covers conventions for AI coding agents.
+- Installed `@medusajs/*` packages may ship version-specific docs at `node_modules/@medusajs/<pkg>/AGENTS.md`. Agents should read those before using a package.
+- [Medusa agent skills](https://docs.medusajs.com/learn/introduction/build-with-llms-ai/agentic-skills) add Medusa backend, admin, and storefront know-how to Claude Code and other agents.
+- Connect the Medusa docs MCP server:
+
+  ```bash
+  claude mcp add --transport http medusa https://docs.medusajs.com/mcp
+  ```
+
+- If you deploy on Medusa Cloud, connect the Cloud MCP server to inspect deployments, logs, and environment variables:
+
+  ```bash
+  claude mcp add --transport http medusa-cloud https://cloud.medusajs.com/mcp
+  ```
+
 ## Resources
 
 - [Medusa Documentation](https://docs.medusajs.com)
 - [Storefront Development](https://docs.medusajs.com/resources/storefront-development)
 - [Deploy to Medusa Cloud](https://docs.medusajs.com/cloud)
+- [Build with LLMs and AI](https://docs.medusajs.com/learn/introduction/build-with-llms-ai)
+- [Medusa docs for LLMs (llms.txt)](https://docs.medusajs.com/llms.txt)
 
