@@ -21,8 +21,7 @@
     "dev:tee": "medusa develop 2>&1 | tee -a ../backend.log",
     "test:integration:http": "TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",
     "test:integration:modules": "TEST_TYPE=integration:modules NODE_OPTIONS=--experimental-vm-modules jest --silent --runInBand --forceExit",
-    "test:unit": "TEST_TYPE=unit NODE_OPTIONS=--experimental-vm-modules jest --silent --runInBand --forceExit",
-    "email:dev": "email-preview --dir ./src/email-templates --port 9004 --hostname 0.0.0.0"
+    "test:unit": "TEST_TYPE=unit NODE_OPTIONS=--experimental-vm-modules jest --silent --runInBand --forceExit"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -31,7 +30,6 @@
     "@medusajs/cli": "2.21.2",
     "@medusajs/dashboard": "2.21.2",
     "@medusajs/draft-order": "2.21.2",
-    "@medusajs/email-preview-server": "^0.0.10",
     "@medusajs/framework": "2.21.2",
     "@medusajs/icons": "2.21.2",
     "@medusajs/js-sdk": "2.21.2",

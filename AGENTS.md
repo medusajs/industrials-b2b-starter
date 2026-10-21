@@ -83,7 +83,6 @@ Run from the repo root unless noted. Requires Node `>=22.22.0` and pnpm 10.
 | `pnpm --filter backend test:integration:http` | HTTP integration tests |
 | `pnpm --filter backend test:unit` | Unit tests (`src/**/__tests__/**/*.unit.spec.ts`) |
 | `pnpm --filter backend test:integration:modules` | Module tests (`src/modules/*/__tests__/`) |
-| `pnpm --filter backend email:dev` | Email template preview on `:9004` |
 | `cd apps/backend && npx medusa db:migrate` | Run migrations (also seeds demo data on first run) |
 | `cd apps/backend && npx medusa db:generate <module>` | Generate migrations for a custom module |
 | `cd apps/backend && npx medusa user -e <email> -p <password>` | Create an admin user |
