@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Medusa v2 B2B starter for industrial equipment: a Medusa backend (`apps/backend`) and a TanStack Start storefront (`apps/storefront`) in a pnpm + Turborepo monorepo.
+Industrials B2B Starter, a Medusa v2 starter for industrial equipment: a Medusa backend (`apps/backend`) and a TanStack Start storefront (`apps/storefront`) in a pnpm + Turborepo monorepo.
 
 ## Before You Start
 

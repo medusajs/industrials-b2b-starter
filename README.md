@@ -8,7 +8,7 @@
   </a>
 </p>
 <h1 align="center">
-  Medusa Industrials B2B Starter
+  Industrials B2B Starter
 </h1>
 
 <h4 align="center">
