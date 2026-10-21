@@ -196,3 +196,29 @@ export const retrieveProduct = async ({
 
   return products[0]
 }
+
+export const listAllProducts = async ({
+  fields,
+}: {
+  fields: string;
+}): Promise<HttpTypes.StoreProduct[]> => {
+  const limit = 100
+  const products: HttpTypes.StoreProduct[] = []
+  let count = Infinity
+
+  while (products.length < count) {
+    const response = await sdk.store.product.list({
+      limit,
+      offset: products.length,
+      fields,
+    })
+    products.push(...response.products)
+    count = response.count
+
+    if (response.products.length === 0) {
+      break
+    }
+  }
+
+  return products
+}

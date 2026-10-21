@@ -55,7 +55,10 @@ export function PublicHeader({ bannerVisible = false }: PublicHeaderProps) {
             
             {/* Mobile menu button */}
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
               className="md:hidden p-2 text-gray-600 hover:text-gray-900 cursor-pointer"
             >
               {mobileMenuOpen ? (

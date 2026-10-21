@@ -1,8 +1,9 @@
-import { createFileRoute, notFound, Outlet } from "@tanstack/react-router"
+import { createFileRoute, notFound, Outlet, redirect } from "@tanstack/react-router"
 import { listRegions } from "@/lib/data/regions"
+import { getStoredCountryCode } from "@/lib/data/country-code"
 
 export const Route = createFileRoute("/$countryCode")({
-  loader: async ({ params, context }) => {
+  loader: async ({ params, context, location }) => {
     const { countryCode } = params
     const { queryClient } = context
 
@@ -20,6 +21,10 @@ export const Route = createFileRoute("/$countryCode")({
     )
 
     if (!isValidCountry) {
+      if (countryCode.length !== 2) {
+        const { countryCode: storedCountryCode } = await getStoredCountryCode()
+        throw redirect({ href: `/${storedCountryCode}${location.href}` })
+      }
       throw notFound() // Show 404 for invalid countries
     }
 

@@ -185,7 +185,7 @@ export function PublicHomePage({ products = [], categories = [] }: PublicHomePag
             {categories.map((category) => (
               <a
                 key={category.id}
-                href={`/${countryCode}/store?category=${category.id}`}
+                href={`/${countryCode}/categories/${category.handle}`}
                 className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-teal-200 transition-all group"
               >
                 <div className="w-12 h-12 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-teal-100 transition-colors">

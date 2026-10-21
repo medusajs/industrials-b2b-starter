@@ -1,8 +1,14 @@
 import Home from "@/pages/home"
 import { createFileRoute, notFound } from "@tanstack/react-router"
-import { getRegion } from "@/lib/data/regions"
+import { getRegion, listRegions } from "@/lib/data/regions"
+import { buildRegionsReturnPolicies } from "@/lib/utils/store-policies"
 import { listProducts } from "@/lib/data/products"
+import { listCategories } from "@/lib/data/categories"
 import { queryKeys } from "@/lib/utils/query-keys"
+import { sanitize } from "@/lib/utils/sanitize"
+import { getStorefrontUrl, STORE_NAME } from "@/lib/utils/site"
+
+const HOME_CATEGORY_PARAMS = { include_ancestors_tree: false }
 
 export const Route = createFileRoute("/$countryCode/")({
   loader: async ({ params, context }) => {
@@ -19,26 +25,57 @@ export const Route = createFileRoute("/$countryCode/")({
       throw notFound()
     }
 
-    // Prefetch latest products for SSR (non-blocking)
-    // FeaturedProducts component will use cached data when available
-    queryClient.prefetchQuery({
-      queryKey: queryKeys.products.latest(4, region.id),
-      queryFn: () =>
-        listProducts({
-          query_params: {
-            limit: 4,
-            order: "-created_at",
-          },
-          region_id: region.id,
-        }),
-    })
+    const [regions] = await Promise.all([
+      listRegions({ fields: "id,metadata,*countries" }),
+      queryClient.ensureQueryData({
+        queryKey: queryKeys.products.latest(4, region.id),
+        queryFn: () =>
+          listProducts({
+            query_params: {
+              limit: 4,
+              order: "-created_at",
+            },
+            region_id: region.id,
+          }),
+      }),
+      queryClient.ensureQueryData({
+        queryKey: queryKeys.categories.list(undefined, HOME_CATEGORY_PARAMS),
+        queryFn: () => listCategories({ queryParams: HOME_CATEGORY_PARAMS }),
+      }),
+    ])
 
-    return {
+    return sanitize({
       countryCode,
       region,
-    }
+      returnPolicies: buildRegionsReturnPolicies(regions),
+    })
   },
-  head: () => {
+  head: ({ params, loaderData }) => {
+    const storefrontUrl = getStorefrontUrl()
+    const websiteData = {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: STORE_NAME,
+      url: `${storefrontUrl}/${params.countryCode}`,
+      potentialAction: {
+        "@type": "SearchAction",
+        target: {
+          "@type": "EntryPoint",
+          urlTemplate: `${storefrontUrl}/${params.countryCode}/search?q={search_term_string}`,
+        },
+        "query-input": "required name=search_term_string",
+      },
+    }
+    const organizationData = {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: STORE_NAME,
+      url: storefrontUrl,
+      logo: `${storefrontUrl}/images/prolift-favicon.svg`,
+      ...(loaderData?.returnPolicies?.length && {
+        hasMerchantReturnPolicy: loaderData.returnPolicies,
+      }),
+    }
     const title = `ProLift Equipment | Industrial Lifting Solutions`
     const description = `Discover ProLift's curated collection of industrial equipment, forklift parts, and warehouse solutions. Browse our latest products and shop with confidence.`
 
@@ -75,7 +112,11 @@ export const Route = createFileRoute("/$countryCode/")({
           property: "twitter:description",
           content: description,
         },
-      ]
+      ],
+      scripts: [
+        { type: "application/ld+json", children: JSON.stringify(websiteData) },
+        { type: "application/ld+json", children: JSON.stringify(organizationData) },
+      ],
     }
   },
   component: Home,

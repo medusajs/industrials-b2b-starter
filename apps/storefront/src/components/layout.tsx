@@ -25,10 +25,10 @@ export default function Layout() {
     localStorage.setItem("sidebar_collapsed", String(newState))
   }
 
-  // Only show loading when we're loading AND we think the user might be authenticated
-  // This prevents loading flash for unauthenticated users on public pages
+  // Auth is unknown during SSR, so the server must render the public layout rather than
+  // a spinner; otherwise crawlers and agents that don't run JS get an empty page.
   const cachedAuthState = typeof window !== "undefined" ? sessionStorage.getItem("auth_state") : null
-  const shouldShowLoading = isLoading && (cachedAuthState === "authenticated" || cachedAuthState === null)
+  const shouldShowLoading = isLoading && cachedAuthState === "authenticated"
   
   if (shouldShowLoading) {
     return (

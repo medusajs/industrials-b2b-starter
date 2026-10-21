@@ -1,6 +1,17 @@
-import RegionRedirect from "@/components/region-redirect"
-import { createFileRoute } from "@tanstack/react-router"
+import { getStoredCountryCode } from "@/lib/data/country-code"
+import { createFileRoute, notFound, redirect } from "@tanstack/react-router"
 
 export const Route = createFileRoute("/$")({
-  component: () => <RegionRedirect isChecking404={true} />,
-});
+  loader: async ({ params }) => {
+    const path = params._splat ?? ""
+    const [firstSegment] = path.split("/")
+
+    if (!path || firstSegment.length === 2) {
+      throw notFound()
+    }
+
+    const { countryCode } = await getStoredCountryCode()
+
+    throw redirect({ href: `/${countryCode}/${path}` })
+  },
+})

@@ -164,6 +164,8 @@ export function BulkVariantTable({ product, region }: BulkVariantTableProps) {
                   <td className="py-3 px-4">
                     <div className="flex items-center justify-center gap-1">
                       <button
+                        type="button"
+                        aria-label={`Decrease quantity for ${variant.title}`}
                         onClick={() => setQuantity(variant.id, qty - 1)}
                         disabled={!inStock || qty <= 0}
                         className="w-7 h-7 flex items-center justify-center rounded border border-border text-text-muted hover:bg-slate-100 hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
@@ -172,6 +174,7 @@ export function BulkVariantTable({ product, region }: BulkVariantTableProps) {
                       </button>
                       <input
                         type="number"
+                        aria-label={`Quantity for ${variant.title}`}
                         min={0}
                         value={qty}
                         onChange={(e) =>
@@ -181,6 +184,8 @@ export function BulkVariantTable({ product, region }: BulkVariantTableProps) {
                         className="w-12 h-7 text-center text-sm font-medium border border-border rounded bg-surface text-text-primary focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                       <button
+                        type="button"
+                        aria-label={`Increase quantity for ${variant.title}`}
                         onClick={() => setQuantity(variant.id, qty + 1)}
                         disabled={!inStock}
                         className="w-7 h-7 flex items-center justify-center rounded border border-border text-text-muted hover:bg-slate-100 hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"

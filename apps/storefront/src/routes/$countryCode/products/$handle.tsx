@@ -2,6 +2,13 @@ import { listProducts, retrieveProduct } from "@/lib/data/products";
 import { getRegion } from "@/lib/data/regions";
 import { queryKeys } from "@/lib/utils/query-keys";
 import { sanitize } from "@/lib/utils/sanitize";
+import { isVariantInStock } from "@/lib/utils/product";
+import { getStorefrontUrl, STORE_NAME } from "@/lib/utils/site";
+import {
+  buildReturnPolicy,
+  buildShippingDetails,
+  getRegionPolicies,
+} from "@/lib/utils/store-policies";
 import ProductDetails from "@/pages/product";
 import { HttpTypes } from "@medusajs/types";
 import { createFileRoute, notFound } from "@tanstack/react-router";
@@ -29,7 +36,7 @@ export const Route = createFileRoute("/$countryCode/products/$handle")({
             handle,
             region_id: region.id,
             fields:
-              "*variants, +variants.inventory_quantity, +variants.manage_inventory, +variants.allow_backorder, +variants.calculated_price, *images, *options, *options.values, *collection, *tags",
+              "*variants, *variants.options, +variants.inventory_quantity, +variants.manage_inventory, +variants.allow_backorder, +variants.calculated_price, *images, *options, *options.values, *collection, *tags",
           });
         } catch {
           throw notFound();
@@ -72,7 +79,7 @@ export const Route = createFileRoute("/$countryCode/products/$handle")({
     });
   },
   head: ({ loaderData }) => {
-    const { product, region } = loaderData || {};
+    const { product, countryCode, region } = loaderData || {};
 
     if (!product) {
       return {
@@ -84,25 +91,52 @@ export const Route = createFileRoute("/$countryCode/products/$handle")({
       };
     }
 
-    // Create structured data for SEO
+    const storefrontUrl = getStorefrontUrl()
+    const productUrl = `${storefrontUrl}/${countryCode}/products/${product.handle}`
+    const variants = product.variants ?? []
+    const toAvailability = (inStock: boolean) =>
+      inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+    const productInStock = variants.some(isVariantInStock)
+    const policies = getRegionPolicies(region)
+    const images = product.images?.map((img: { url?: string }) => img.url).filter(Boolean) || []
+
+    // Prices are shown only after sign-in, so offers intentionally carry no price.
     const structuredData = {
       "@context": "https://schema.org",
-      "@type": "Product",
+      "@type": "ProductGroup",
       name: product.title,
       description: product.description,
-      image: product.images?.map((img: { url?: string }) => img.url).filter(Boolean) || [],
+      image: images.length ? images : product.thumbnail,
+      url: productUrl,
+      productGroupID: product.id,
       brand: {
         "@type": "Brand",
-        name: "ProLift Equipment",
+        name: (product.metadata?.brand as string) || STORE_NAME,
       },
-      offers: {
-        "@type": "Offer",
-        availability: "https://schema.org/InStock",
-        priceCurrency: region?.currency_code?.toUpperCase(),
-        price: product.variants?.[0]?.calculated_price?.calculated_amount
-          ? product.variants[0].calculated_price.calculated_amount.toFixed(2)
-          : undefined,
-      },
+      hasVariant: variants.map((variant: HttpTypes.StoreProductVariant) => ({
+        "@type": "Product",
+        name: variant.title ? `${product.title} - ${variant.title}` : product.title,
+        sku: variant.sku || undefined,
+        image: images[0] || product.thumbnail,
+        additionalProperty: variant.options
+          ?.map((option) => ({
+            "@type": "PropertyValue",
+            name: product.options?.find((o: HttpTypes.StoreProductOption) => o.id === option.option_id)?.title,
+            value: option.value,
+          }))
+          .filter((property) => property.name !== "Default option"),
+        offers: {
+          "@type": "Offer",
+          url: productUrl,
+          sku: variant.sku || undefined,
+          availability: toAvailability(isVariantInStock(variant)),
+          itemCondition: "https://schema.org/NewCondition",
+          ...(policies && {
+            shippingDetails: buildShippingDetails(policies, countryCode, region.currency_code),
+            hasMerchantReturnPolicy: buildReturnPolicy(policies, countryCode),
+          }),
+        },
+      })),
     };
 
     // Get first product image for preloading (critical for LCP)
@@ -130,17 +164,26 @@ export const Route = createFileRoute("/$countryCode/products/$handle")({
           property: "og:image",
           content: product.thumbnail || "",
         },
+        { property: "og:url", content: productUrl },
+        { property: "og:type", content: "product" },
+        {
+          property: "product:availability",
+          content: productInStock ? "in stock" : "out of stock",
+        },
       ],
-      links: firstImageUrl
-        ? [
-            {
-              rel: "preload",
-              href: firstImageUrl,
-              as: "image",
-              fetchPriority: "high",
-            },
-          ]
-        : [],
+      links: [
+        { rel: "canonical", href: productUrl },
+        ...(firstImageUrl
+          ? [
+              {
+                rel: "preload",
+                href: firstImageUrl,
+                as: "image",
+                fetchPriority: "high" as const,
+              },
+            ]
+          : []),
+      ],
       scripts: [
         {
           type: "application/ld+json",
