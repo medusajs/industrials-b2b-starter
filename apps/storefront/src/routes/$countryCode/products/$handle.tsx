@@ -1,6 +1,5 @@
-import { listProducts, retrieveProduct } from "@/lib/data/products";
+import { retrieveProduct } from "@/lib/data/products";
 import { getRegion, listRegions } from "@/lib/data/regions";
-import { queryKeys } from "@/lib/utils/query-keys";
 import { sanitize } from "@/lib/utils/sanitize";
 import { isVariantInStock } from "@/lib/utils/product";
 import { getStorefrontUrl, listCountryCodes, STORE_NAME } from "@/lib/utils/site";
@@ -41,34 +40,6 @@ export const Route = createFileRoute("/$countryCode/products/$handle")({
         } catch {
           throw notFound();
         }
-      },
-    });
-
-    // Ensure related products are loaded for SSR to prevent hydration mismatch
-    // This ensures consistent rendering between server and client
-    await queryClient.ensureQueryData({
-      queryKey: queryKeys.products.related(product.id, region.id),
-      queryFn: async () => {
-        const params: HttpTypes.StoreProductListParams = {
-          fields: "title, handle, *thumbnail, *variants",
-          is_giftcard: false,
-          limit: 4,
-        };
-
-        if (product.collection_id) {
-          params.collection_id = [product.collection_id];
-        }
-
-        if (product.tags && product.tags.length > 0) {
-          params.tag_id = product.tags.map((tag) => tag.id);
-        }
-
-        const { products } = await listProducts({
-          query_params: params,
-          region_id: region.id,
-        });
-
-        return products.filter((p) => p.id !== product.id);
       },
     });
 
