@@ -298,7 +298,7 @@ const applyCheckoutDetails = async (
   if (countryCode) {
     const inCartRegion = cart.region?.countries?.some((c) => c.iso_2 === countryCode)
     if (!inCartRegion) {
-      const regions = await listRegions({ fields: "id,*countries" })
+      const regions = await listRegions()
       const region = regions.find((r) => r.countries?.some((c) => c.iso_2 === countryCode))
       if (!region) return unsupportedCountry(CHECKOUT)
       update.region_id = region.id

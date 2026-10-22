@@ -24,7 +24,7 @@ export const resolveRequestRegion = async (
   request: Request,
   explicitCountryCode?: string
 ): Promise<{ countryCode: string; region: HttpTypes.StoreRegion } | null> => {
-  const regions = await listRegions({ fields: "id,currency_code,metadata,*countries" })
+  const regions = await listRegions()
   const candidates = [
     explicitCountryCode?.toLowerCase(),
     readCookie(request, COUNTRY_CODE_KEY),

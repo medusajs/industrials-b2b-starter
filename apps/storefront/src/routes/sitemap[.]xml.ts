@@ -22,7 +22,7 @@ export const Route = createFileRoute("/sitemap.xml")({
         const baseUrl = getStorefrontUrl()
 
         const [regions, products, categories] = await Promise.all([
-          listRegions({ fields: "*countries" }),
+          listRegions(),
           listAllProducts({ fields: "handle,updated_at" }),
           listCategories({ fields: "handle,updated_at" }),
         ])

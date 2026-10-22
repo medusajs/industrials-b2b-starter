@@ -10,7 +10,7 @@ export const Route = createFileRoute("/$countryCode")({
     // Get all regions to validate country code
     const regions = await queryClient.ensureQueryData({
       queryKey: ["regions"],
-      queryFn: () => listRegions({ fields: "currency_code, *countries" }),
+      queryFn: () => listRegions(),
     })
 
     // Check if country code is valid

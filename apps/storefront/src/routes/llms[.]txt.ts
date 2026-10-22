@@ -13,7 +13,7 @@ export const Route = createFileRoute("/llms.txt")({
         const baseUrl = getStorefrontUrl()
 
         const [regions, categories] = await Promise.all([
-          listRegions({ fields: "name,currency_code,*countries" }),
+          listRegions(),
           listCategories({ fields: "name,handle" }),
         ])
 

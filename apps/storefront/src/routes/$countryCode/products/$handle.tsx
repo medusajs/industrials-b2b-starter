@@ -72,7 +72,7 @@ export const Route = createFileRoute("/$countryCode/products/$handle")({
       },
     });
 
-    const regions = await listRegions({ fields: "id,*countries" });
+    const regions = await listRegions();
 
     return sanitize({
       countryCode,
@@ -108,45 +108,64 @@ export const Route = createFileRoute("/$countryCode/products/$handle")({
     const images = product.images?.map((img: { url?: string }) => img.url).filter(Boolean) || []
 
     // Prices are shown only after sign-in, so offers intentionally carry no price.
-    const structuredData = {
-      "@context": "https://schema.org",
-      "@type": "ProductGroup",
-      name: product.title,
-      description: product.description,
-      image: images.length ? images : product.thumbnail,
-      url: productUrl,
-      productGroupID: product.id,
-      brand: {
-        "@type": "Brand",
-        name: (product.metadata?.brand as string) || STORE_NAME,
-      },
-      hasVariant: variants.map((variant: HttpTypes.StoreProductVariant) => ({
-        "@type": "Product",
-        name: variant.title ? `${product.title} - ${variant.title}` : product.title,
-        sku: variant.sku || undefined,
-        gtin: variant.ean || variant.upc || variant.barcode || undefined,
-        mpn: variant.mid_code || undefined,
-        image: images[0] || product.thumbnail,
-        additionalProperty: variant.options
-          ?.map((option) => ({
-            "@type": "PropertyValue",
-            name: product.options?.find((o: HttpTypes.StoreProductOption) => o.id === option.option_id)?.title,
-            value: option.value,
-          }))
-          .filter((property) => property.name !== "Default option"),
-        offers: {
-          "@type": "Offer",
-          url: productUrl,
-          sku: variant.sku || undefined,
-          availability: toAvailability(isVariantInStock(variant)),
-          itemCondition: "https://schema.org/NewCondition",
-          ...(policies && {
-            shippingDetails: buildShippingDetails(policies, countryCode, region.currency_code),
-            hasMerchantReturnPolicy: buildReturnPolicy(policies, countryCode),
-          }),
-        },
-      })),
+    const brand = {
+      "@type": "Brand",
+      name: (product.metadata?.brand as string) || STORE_NAME,
     };
+    const toVariantData = (variant: HttpTypes.StoreProductVariant) => ({
+      sku: variant.sku || undefined,
+      gtin: variant.ean || variant.upc || variant.barcode || undefined,
+      mpn: variant.mid_code || undefined,
+      offers: {
+        "@type": "Offer",
+        url: productUrl,
+        sku: variant.sku || undefined,
+        availability: toAvailability(isVariantInStock(variant)),
+        itemCondition: "https://schema.org/NewCondition",
+        ...(policies && {
+          shippingDetails: buildShippingDetails(policies, countryCode, region.currency_code),
+          hasMerchantReturnPolicy: buildReturnPolicy(policies, countryCode),
+        }),
+      },
+    });
+
+    const structuredData =
+      variants.length === 1
+        ? {
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: product.title,
+            description: product.description,
+            image: images.length ? images : product.thumbnail,
+            url: productUrl,
+            brand,
+            ...toVariantData(variants[0]),
+          }
+        : {
+            "@context": "https://schema.org",
+            "@type": "ProductGroup",
+            name: product.title,
+            description: product.description,
+            image: images.length ? images : product.thumbnail,
+            url: productUrl,
+            productGroupID: product.id,
+            brand,
+            hasVariant: variants.map((variant: HttpTypes.StoreProductVariant) => ({
+              "@type": "Product",
+              name: variant.title ? `${product.title} - ${variant.title}` : product.title,
+              image: images[0] || product.thumbnail,
+              additionalProperty: variant.options
+                ?.map((option) => ({
+                  "@type": "PropertyValue",
+                  name: product.options?.find(
+                    (o: HttpTypes.StoreProductOption) => o.id === option.option_id
+                  )?.title,
+                  value: option.value,
+                }))
+                .filter((property) => property.name !== "Default option"),
+              ...toVariantData(variant),
+            })),
+          };
 
     // Get first product image for preloading (critical for LCP)
     const firstImageUrl = product.images?.[0]?.url || product.thumbnail;

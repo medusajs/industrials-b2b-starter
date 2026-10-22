@@ -30,7 +30,7 @@ export const Route = createRootRouteWithContext<{
     await Promise.all([
       queryClient.ensureQueryData({
         queryKey: ["regions"],
-        queryFn: () => listRegions({ fields: "id, name, currency_code, *countries" }),
+        queryFn: () => listRegions(),
       }),
       queryClient.ensureQueryData({
         queryKey: queryKeys.categories.list(FOOTER_CATEGORY_FIELDS, FOOTER_CATEGORY_PARAMS),

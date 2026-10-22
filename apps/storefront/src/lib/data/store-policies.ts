@@ -2,7 +2,7 @@ import { listRegions } from "@/lib/data/regions"
 import { getRegionPolicies, StorePolicies } from "@/lib/utils/store-policies"
 
 export const getStorePolicies = async (countryCode: string) => {
-  const regions = await listRegions({ fields: "id,name,currency_code,metadata,*countries" })
+  const regions = await listRegions()
   const current = regions.find((region) =>
     region.countries?.some((country) => country.iso_2 === countryCode.toLowerCase())
   )

@@ -26,7 +26,7 @@ export const Route = createFileRoute("/$countryCode/")({
     }
 
     const [regions] = await Promise.all([
-      listRegions({ fields: "id,metadata,*countries" }),
+      listRegions(),
       queryClient.ensureQueryData({
         queryKey: queryKeys.products.latest(4, region.id),
         queryFn: () =>
