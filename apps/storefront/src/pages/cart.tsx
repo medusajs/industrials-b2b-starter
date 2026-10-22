@@ -11,42 +11,39 @@ import { CheckoutStepKey } from "@/lib/types/global"
 import { useCart, useCreateCart } from "@/lib/hooks/use-cart"
 import { useCreateQuoteFromCart } from "@/lib/hooks/use-quotes"
 import { useAuth } from "@/lib/hooks/use-auth"
-import { sortCartItems, getStoredCart, setStoredCart } from "@/lib/utils/cart"
+import { sortCartItems, getStoredCart } from "@/lib/utils/cart"
 import { queryKeys } from "@/lib/utils/query-keys"
 import { useQueryClient } from "@tanstack/react-query"
 import { ShoppingCart, DocumentText } from "@medusajs/icons"
-import { Link, useLoaderData, useNavigate, useSearch } from "@tanstack/react-router"
+import { sdk } from "@/lib/utils/sdk"
+import { Link, useLoaderData, useNavigate } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { toast } from "sonner"
 
 const DEFAULT_CART_FIELDS =
-  "id, *items, total, currency_code, subtotal, item_subtotal, shipping_total, discount_total, tax_total, *promotions"
+  "id, customer_id, *items, total, currency_code, subtotal, item_subtotal, shipping_total, discount_total, tax_total, *promotions"
 
 const Cart = () => {
   const { region, countryCode } = useLoaderData({
     from: "/$countryCode/cart",
   })
-  const { cart_id: permalinkCartId } = useSearch({ from: "/$countryCode/cart" })
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-
-  // Adopt a cart created by a /buy permalink before useCart reads the stored cart ID.
-  if (permalinkCartId && typeof window !== "undefined" && getStoredCart() !== permalinkCartId) {
-    setStoredCart(permalinkCartId)
-  }
-
-  useEffect(() => {
-    if (!permalinkCartId) return
-    queryClient.invalidateQueries({ predicate: queryKeys.cart.predicate })
-    navigate({ to: "/$countryCode/cart", params: { countryCode }, search: {}, replace: true })
-  }, [permalinkCartId, countryCode, navigate, queryClient])
-
   const { data: cart, isLoading: cartLoading } = useCart({
     fields: DEFAULT_CART_FIELDS,
   })
   const createCartMutation = useCreateCart()
   const createQuoteFromCartMutation = useCreateQuoteFromCart()
   const { isAuthenticated } = useAuth()
+
+  // Carts created by agents (/buy permalinks, UCP, the add-to-cart form) start as guest carts.
+  useEffect(() => {
+    if (!isAuthenticated || !cart?.id || cart.customer_id) return
+    sdk.store.cart
+      .transferCart(cart.id)
+      .then(() => queryClient.invalidateQueries({ predicate: queryKeys.cart.predicate }))
+      .catch(() => undefined)
+  }, [isAuthenticated, cart?.id, cart?.customer_id, queryClient])
 
   // Auto-create cart if none exists
   if (!cart && !cartLoading && !createCartMutation.isPending) {

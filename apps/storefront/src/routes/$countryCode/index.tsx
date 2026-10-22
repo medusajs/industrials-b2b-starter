@@ -6,7 +6,7 @@ import { listProducts } from "@/lib/data/products"
 import { listCategories } from "@/lib/data/categories"
 import { queryKeys } from "@/lib/utils/query-keys"
 import { sanitize } from "@/lib/utils/sanitize"
-import { getStorefrontUrl, STORE_NAME } from "@/lib/utils/site"
+import { getStorefrontUrl, listCountryCodes, STORE_NAME } from "@/lib/utils/site"
 
 const HOME_CATEGORY_PARAMS = { include_ancestors_tree: false }
 
@@ -48,8 +48,12 @@ export const Route = createFileRoute("/$countryCode/")({
       countryCode,
       region,
       returnPolicies: buildRegionsReturnPolicies(regions),
+      countryCodes: listCountryCodes(regions),
     })
   },
+  headers: () => ({
+    "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=600",
+  }),
   head: ({ params, loaderData }) => {
     const storefrontUrl = getStorefrontUrl()
     const websiteData = {
@@ -112,6 +116,14 @@ export const Route = createFileRoute("/$countryCode/")({
           property: "twitter:description",
           content: description,
         },
+      ],
+      links: [
+        { rel: "canonical", href: `${storefrontUrl}/${params.countryCode}` },
+        ...(loaderData?.countryCodes ?? []).map((code: string) => ({
+          rel: "alternate",
+          hrefLang: `en-${code.toUpperCase()}`,
+          href: `${storefrontUrl}/${code}`,
+        })),
       ],
       scripts: [
         { type: "application/ld+json", children: JSON.stringify(websiteData) },

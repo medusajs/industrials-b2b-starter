@@ -1,5 +1,17 @@
 import { sdk } from "@/lib/utils/sdk"
 import { HttpTypes } from "@medusajs/types"
+import { cachedOnServer } from "@/lib/utils/server-cache"
+
+const PRODUCTS_TTL_MS = 60 * 1000
+const PRODUCTS_STALE_MS = 10 * 60 * 1000
+
+const cachedProductList = (query: HttpTypes.StoreProductListParams) =>
+  cachedOnServer(
+    `products:${JSON.stringify(query)}`,
+    PRODUCTS_TTL_MS,
+    () => sdk.store.product.list(query),
+    PRODUCTS_STALE_MS
+  )
 
 /**
  * Lists products with pagination support and filtering options.
@@ -77,7 +89,7 @@ export const listProducts = async ({
       ? `${baseFields},*variants.options`
       : "*variants.options"
 
-  const response = await sdk.store.product.list({
+  const response = await cachedProductList({
     limit,
     offset,
     region_id,
@@ -183,7 +195,7 @@ export const retrieveProduct = async ({
   region_id?: string;
   fields?: string;
 }): Promise<HttpTypes.StoreProduct> => {
-  const { products } = await sdk.store.product.list({
+  const { products } = await cachedProductList({
     handle: handle,
     region_id,
     fields: fields ||

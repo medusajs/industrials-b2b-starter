@@ -6,7 +6,12 @@ export const Route = createFileRoute("/$")({
     const path = params._splat ?? ""
     const [firstSegment] = path.split("/")
 
-    if (!path || firstSegment.length === 2) {
+    if (
+      !path ||
+      firstSegment.length === 2 ||
+      firstSegment.startsWith(".") ||
+      firstSegment === "ucp"
+    ) {
       throw notFound()
     }
 

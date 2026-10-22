@@ -21,7 +21,8 @@ export const Route = createFileRoute("/$countryCode")({
     )
 
     if (!isValidCountry) {
-      if (countryCode.length !== 2) {
+      // Dotfiles (/.well-known) and API paths (/ucp) are never storefront pages.
+      if (countryCode.length !== 2 && !countryCode.startsWith(".") && countryCode !== "ucp") {
         const { countryCode: storedCountryCode } = await getStoredCountryCode()
         throw redirect({ href: `/${storedCountryCode}${location.href}` })
       }

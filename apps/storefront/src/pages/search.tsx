@@ -1,6 +1,7 @@
 import { ProductCard } from "@/components/product-card"
 import { PublicProductCard } from "@/components/public-product-card"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { webMcpTool } from "@/lib/utils/webmcp"
 import { HttpTypes } from "@medusajs/types"
 import { MagnifyingGlass } from "@medusajs/icons"
 import { Link, useLoaderData } from "@tanstack/react-router"
@@ -32,6 +33,7 @@ export default function SearchPage() {
         method="get"
         action={`/${countryCode}/search`}
         className="flex gap-3 mb-8 max-w-2xl"
+        {...webMcpTool("search_products", "Search the equipment catalog by keyword.")}
       >
         <label htmlFor="search-page-q" className="sr-only">
           Search equipment

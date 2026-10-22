@@ -3,6 +3,7 @@ import { listRegions } from "@/lib/data/regions"
 import { POLICY_PAGES } from "@/lib/constants/policy-pages"
 import { getDefaultCountryCode } from "@/lib/utils/region"
 import { getStorefrontUrl, STORE_NAME } from "@/lib/utils/site"
+import { UCP_MCP_PATH, UCP_REST_BASE_PATH } from "@/lib/utils/ucp"
 import { createFileRoute } from "@tanstack/react-router"
 
 export const Route = createFileRoute("/llms.txt")({
@@ -47,7 +48,10 @@ export const Route = createFileRoute("/llms.txt")({
           "## For agents",
           `- [Sitemap](${baseUrl}/sitemap.xml)`,
           `- [UCP profile](${baseUrl}/.well-known/ucp)`,
+          `- UCP MCP endpoint: ${baseUrl}${UCP_MCP_PATH}`,
+          `- UCP REST endpoint: ${baseUrl}${UCP_REST_BASE_PATH}`,
           `- Cart permalink: ${baseUrl}/buy/{variant_id}:{quantity},{variant_id}:{quantity}`,
+          `- Product Markdown: append .md to any product URL, or send Accept: text/markdown`,
           "",
         ].join("\n")
 

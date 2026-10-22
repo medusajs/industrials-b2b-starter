@@ -1,6 +1,4 @@
-import { listRegions } from "@/lib/data/regions"
-import { COUNTRY_CODE_KEY, getDefaultCountryCode } from "@/lib/utils/region"
-import { sdk } from "@/lib/utils/sdk"
+import { cartCookie, createCartWithItems, resolveRequestRegion } from "@/lib/utils/server-cart"
 import { createFileRoute } from "@tanstack/react-router"
 
 const MAX_LINE_ITEMS = 50
@@ -49,13 +47,6 @@ const parseItems = (path: string) => {
   return Array.from(quantities).map(([variant_id, quantity]) => ({ variant_id, quantity }))
 }
 
-const getCookieCountryCode = (request: Request) =>
-  request.headers
-    .get("cookie")
-    ?.split("; ")
-    .find((row) => row.startsWith(`${COUNTRY_CODE_KEY}=`))
-    ?.split("=")[1]
-
 const plainResponse = (message: string, status: number) =>
   new Response(message, {
     status,
@@ -75,29 +66,21 @@ export const Route = createFileRoute("/buy/$")({
           )
         }
 
-        const regions = await listRegions({ fields: "id,*countries" })
-        const requestedCountry = getCookieCountryCode(request)?.toLowerCase()
-        const region =
-          regions.find((r) => r.countries?.some((c) => c.iso_2 === requestedCountry)) ??
-          regions.find((r) => r.countries?.some((c) => c.iso_2 === getDefaultCountryCode(regions)))
-        const countryCode =
-          region?.countries?.find((c) => c.iso_2 === requestedCountry)?.iso_2 ??
-          getDefaultCountryCode(regions)
+        const country = new URL(request.url).searchParams.get("context/address_country") ?? undefined
+        const resolved = await resolveRequestRegion(request, country)
 
-        if (!region || !countryCode) {
-          return plainResponse("No region is configured for this store.", 503)
+        if (!resolved) {
+          return plainResponse("This store doesn't sell to that country.", 404)
         }
 
         try {
-          const { cart } = await sdk.store.cart.create(
-            { region_id: region.id, items },
-            { fields: "id" }
-          )
+          const cartId = await createCartWithItems(resolved.region.id, items)
 
           return new Response(null, {
             status: 303,
             headers: {
-              Location: `/${countryCode}/cart?cart_id=${encodeURIComponent(cart.id)}`,
+              Location: `/${resolved.countryCode}/cart`,
+              "Set-Cookie": cartCookie(cartId),
               "Cache-Control": "no-store",
               "Referrer-Policy": "no-referrer",
             },
@@ -107,7 +90,7 @@ export const Route = createFileRoute("/buy/$")({
 
           if (status && status >= 400 && status < 500) {
             return plainResponse(
-              `One or more items in this permalink are unavailable in ${countryCode.toUpperCase()}.`,
+              `One or more items in this permalink are unavailable in ${resolved.countryCode.toUpperCase()}.`,
               404
             )
           }

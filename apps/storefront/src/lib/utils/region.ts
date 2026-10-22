@@ -37,13 +37,17 @@ export function getCountryCodeFromPath(pathname: string): string | undefined {
 
 // ============ DEFAULT COUNTRY CODE ============
 
+const PREFERRED_COUNTRY_CODES = [
+  (import.meta.env.VITE_DEFAULT_COUNTRY_CODE as string | undefined)?.toLowerCase(),
+  "us",
+]
+
 export default function getDefaultCountryCode(regions: HttpTypes.StoreRegion[]): string | undefined {
-  let defaultCountryCode = undefined
-  regions.some((r) => {
-    defaultCountryCode = r.countries?.[0]?.iso_2
-    return defaultCountryCode !== undefined
-  })
-  return defaultCountryCode
+  const countryCodes = regions.flatMap((r) => r.countries?.map((c) => c.iso_2) ?? [])
+  return (
+    PREFERRED_COUNTRY_CODES.find((code) => code && countryCodes.includes(code)) ??
+    countryCodes.find(Boolean)
+  )
 }
 
 // Also export as named export for flexibility

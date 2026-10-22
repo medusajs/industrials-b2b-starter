@@ -1,9 +1,9 @@
 import { listProducts, retrieveProduct } from "@/lib/data/products";
-import { getRegion } from "@/lib/data/regions";
+import { getRegion, listRegions } from "@/lib/data/regions";
 import { queryKeys } from "@/lib/utils/query-keys";
 import { sanitize } from "@/lib/utils/sanitize";
 import { isVariantInStock } from "@/lib/utils/product";
-import { getStorefrontUrl, STORE_NAME } from "@/lib/utils/site";
+import { getStorefrontUrl, listCountryCodes, STORE_NAME } from "@/lib/utils/site";
 import {
   buildReturnPolicy,
   buildShippingDetails,
@@ -72,12 +72,19 @@ export const Route = createFileRoute("/$countryCode/products/$handle")({
       },
     });
 
+    const regions = await listRegions({ fields: "id,*countries" });
+
     return sanitize({
       countryCode,
       region,
       product: product as HttpTypes.StoreProduct,
+      countryCodes: listCountryCodes(regions),
     });
   },
+  headers: () => ({
+    "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=600",
+    Vary: "Accept",
+  }),
   head: ({ loaderData }) => {
     const { product, countryCode, region } = loaderData || {};
 
@@ -117,6 +124,8 @@ export const Route = createFileRoute("/$countryCode/products/$handle")({
         "@type": "Product",
         name: variant.title ? `${product.title} - ${variant.title}` : product.title,
         sku: variant.sku || undefined,
+        gtin: variant.ean || variant.upc || variant.barcode || undefined,
+        mpn: variant.mid_code || undefined,
         image: images[0] || product.thumbnail,
         additionalProperty: variant.options
           ?.map((option) => ({
@@ -173,6 +182,12 @@ export const Route = createFileRoute("/$countryCode/products/$handle")({
       ],
       links: [
         { rel: "canonical", href: productUrl },
+        { rel: "alternate", type: "text/markdown", href: `${productUrl}.md` },
+        ...(loaderData?.countryCodes ?? []).map((code: string) => ({
+          rel: "alternate",
+          hrefLang: `en-${code.toUpperCase()}`,
+          href: `${storefrontUrl}/${code}/products/${product.handle}`,
+        })),
         ...(firstImageUrl
           ? [
               {
