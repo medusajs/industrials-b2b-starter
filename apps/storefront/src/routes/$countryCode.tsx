@@ -1,15 +1,16 @@
-import { createFileRoute, notFound, Outlet } from "@tanstack/react-router"
+import { createFileRoute, notFound, Outlet, redirect } from "@tanstack/react-router"
 import { listRegions } from "@/lib/data/regions"
+import { getStoredCountryCode } from "@/lib/data/country-code"
 
 export const Route = createFileRoute("/$countryCode")({
-  loader: async ({ params, context }) => {
+  loader: async ({ params, context, location }) => {
     const { countryCode } = params
     const { queryClient } = context
 
     // Get all regions to validate country code
     const regions = await queryClient.ensureQueryData({
       queryKey: ["regions"],
-      queryFn: () => listRegions({ fields: "currency_code, *countries" }),
+      queryFn: () => listRegions(),
     })
 
     // Check if country code is valid
@@ -20,6 +21,11 @@ export const Route = createFileRoute("/$countryCode")({
     )
 
     if (!isValidCountry) {
+      // Dotfiles (/.well-known) and API paths (/ucp) are never storefront pages.
+      if (countryCode.length !== 2 && !countryCode.startsWith(".") && countryCode !== "ucp") {
+        const { countryCode: storedCountryCode } = await getStoredCountryCode()
+        throw redirect({ href: `/${storedCountryCode}${location.href}` })
+      }
       throw notFound() // Show 404 for invalid countries
     }
 

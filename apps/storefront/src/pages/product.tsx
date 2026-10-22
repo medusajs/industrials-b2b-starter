@@ -5,6 +5,8 @@ import { BulkVariantTable } from "@/components/bulk-variant-table"
 import { ImageGallery } from "@/components/ui/image-gallery"
 import { ChevronRight, Check } from "@medusajs/icons"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { isVariantInStock } from "@/lib/utils/product"
+import { getRegionPolicies } from "@/lib/utils/store-policies"
 
 interface ProductPageData {
   product: HttpTypes.StoreProduct
@@ -44,20 +46,27 @@ export function ProductPage() {
 
   // Extract metadata
   const brand = (product.metadata?.brand as string) || "ProLift"
-  const sku = product.variants?.[0]?.sku || "N/A"
+  const sku = product.variants?.[0]?.sku
   const category = product.categories?.[0]?.name || product.collection?.title || "Equipment"
-  
-  const specs = {
-    capacity: (product.metadata?.capacity as string) || "5,000 lbs",
-    liftHeight: (product.metadata?.lift_height as string) || "189 in",
-    fuelType: (product.metadata?.fuel_type as string) || "Electric",
-    warranty: (product.metadata?.warranty as string) || "3 Years",
-  }
+  const inStock = (product.variants ?? []).some(isVariantInStock)
 
+  const specs = [
+    { label: "Capacity", value: product.metadata?.capacity },
+    { label: "Lift Height", value: product.metadata?.lift_height },
+    { label: "Fuel Type", value: product.metadata?.fuel_type },
+    { label: "Warranty", value: product.metadata?.warranty },
+  ].filter((spec): spec is { label: string; value: string } => typeof spec.value === "string" && spec.value !== "")
+
+  const policies = getRegionPolicies(region)
   const features = [
     "Full maintenance history available",
     "Factory-certified technicians",
-    "48-hour delivery available",
+    ...(policies
+      ? [
+          `Ships in ${policies.handlingDays.min}-${policies.handlingDays.max} business days`,
+          `${policies.returnWindowDays}-day returns`,
+        ]
+      : []),
     "Flexible financing options",
     "Trade-in accepted",
   ]
@@ -69,7 +78,7 @@ export function ProductPage() {
         <div className="px-8 py-4">
           <div className="flex items-center justify-between">
             {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-sm">
+            <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm">
               <Link to={"/$countryCode" as string} params={{ countryCode }} className="text-text-secondary hover:text-text-primary transition-colors">
                 Dashboard
               </Link>
@@ -78,15 +87,9 @@ export function ProductPage() {
                 Product Catalog
               </Link>
               <ChevronRight className="w-4 h-4 text-text-muted" />
-              <span className="text-text-primary font-medium">{product.title}</span>
-            </div>
+              <span className="text-text-primary font-medium" aria-current="page">{product.title}</span>
+            </nav>
 
-            {/* Actions */}
-            <div className="flex items-center gap-3">
-              <button className="px-4 py-2 text-text-secondary border border-border rounded-lg hover:bg-surface-hover transition-colors cursor-pointer">
-                Add to Compare
-              </button>
-            </div>
           </div>
         </div>
       </header>
@@ -127,17 +130,27 @@ export function ProductPage() {
                 <span className="text-sm font-semibold text-text-secondary uppercase tracking-wider">
                   {brand}
                 </span>
-                <span className="text-sm text-text-muted">|</span>
-                <span className="text-sm font-mono text-text-muted">SKU: {sku}</span>
+                {sku && (
+                  <>
+                    <span className="text-sm text-text-muted">|</span>
+                    <span className="text-sm font-mono text-text-muted">SKU: {sku}</span>
+                  </>
+                )}
               </div>
               <h1 className="text-3xl font-bold text-text-primary mb-3">{product.title}</h1>
               <div className="flex items-center gap-3">
                 <span className="px-3 py-1 bg-slate-800 text-white text-sm font-medium rounded-full">
                   {category}
                 </span>
-                <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-sm font-medium rounded-full">
-                  In Stock
-                </span>
+                {inStock ? (
+                  <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-sm font-medium rounded-full">
+                    In Stock
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 bg-slate-100 text-text-secondary text-sm font-medium rounded-full">
+                    Out of Stock
+                  </span>
+                )}
               </div>
             </div>
 
@@ -158,28 +171,19 @@ export function ProductPage() {
               )}
             </div>
 
-            {/* Specs Grid */}
-            <div className="bg-surface rounded-xl border border-border p-6 mb-6 shadow-card">
-              <h3 className="text-lg font-semibold text-text-primary mb-4">Specifications</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-slate-50 rounded-lg">
-                  <p className="text-xs text-text-muted uppercase tracking-wider mb-1">Capacity</p>
-                  <p className="text-lg font-semibold text-text-primary">{specs.capacity}</p>
-                </div>
-                <div className="p-4 bg-slate-50 rounded-lg">
-                  <p className="text-xs text-text-muted uppercase tracking-wider mb-1">Lift Height</p>
-                  <p className="text-lg font-semibold text-text-primary">{specs.liftHeight}</p>
-                </div>
-                <div className="p-4 bg-slate-50 rounded-lg">
-                  <p className="text-xs text-text-muted uppercase tracking-wider mb-1">Fuel Type</p>
-                  <p className="text-lg font-semibold text-text-primary">{specs.fuelType}</p>
-                </div>
-                <div className="p-4 bg-slate-50 rounded-lg">
-                  <p className="text-xs text-text-muted uppercase tracking-wider mb-1">Warranty</p>
-                  <p className="text-lg font-semibold text-text-primary">{specs.warranty}</p>
-                </div>
+            {specs.length > 0 && (
+              <div className="bg-surface rounded-xl border border-border p-6 mb-6 shadow-card">
+                <h3 className="text-lg font-semibold text-text-primary mb-4">Specifications</h3>
+                <dl className="grid grid-cols-2 gap-4">
+                  {specs.map((spec) => (
+                    <div key={spec.label} className="p-4 bg-slate-50 rounded-lg">
+                      <dt className="text-xs text-text-muted uppercase tracking-wider mb-1">{spec.label}</dt>
+                      <dd className="text-lg font-semibold text-text-primary">{spec.value}</dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
-            </div>
+            )}
 
             {/* Features */}
             <div className="bg-surface rounded-xl border border-border p-6 shadow-card">
@@ -203,12 +207,16 @@ export function ProductPage() {
           <h2 className="text-2xl font-bold text-white mb-2">Need Help Choosing?</h2>
           <p className="text-sidebar-text mb-6">Our equipment specialists are ready to assist you</p>
           <div className="flex items-center justify-center gap-4">
-            <button className="px-6 py-3 bg-white text-sidebar font-medium rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
+            <a href="tel:+18007765438" className="px-6 py-3 bg-white text-sidebar font-medium rounded-lg hover:bg-slate-100 transition-colors">
               Call 1-800-PROLIFT
-            </button>
-            <button className="px-6 py-3 bg-accent text-white font-medium rounded-lg hover:bg-accent-hover transition-colors cursor-pointer">
-              Live Chat
-            </button>
+            </a>
+            <Link
+              to="/$countryCode/contact"
+              params={{ countryCode }}
+              className="px-6 py-3 bg-accent text-white font-medium rounded-lg hover:bg-accent-hover transition-colors"
+            >
+              Contact Us
+            </Link>
           </div>
         </div>
       </div>

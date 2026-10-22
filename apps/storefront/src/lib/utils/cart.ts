@@ -4,18 +4,34 @@ import { queryKeys } from "@/lib/utils/query-keys"
 
 // ============ STORED CART ============
 
-const CART_KEY = "medusa_cart"
+export const CART_KEY = "medusa_cart"
 
+const readCartCookie = (): string | undefined => {
+  if (typeof document === "undefined") return undefined
+  return document.cookie
+    .split("; ")
+    .find((row) => row.startsWith(`${CART_KEY}=`))
+    ?.split("=")[1] || undefined
+}
+
+// Mirrored to a cookie so server routes (add-to-cart form, /buy permalinks, UCP) share the same cart.
 export const getStoredCart = (): string | undefined => {
-  return localStorage.getItem(CART_KEY) || undefined
+  const fromCookie = readCartCookie()
+  const fromStorage = localStorage.getItem(CART_KEY) || undefined
+  if (fromCookie && fromCookie !== fromStorage) {
+    localStorage.setItem(CART_KEY, fromCookie)
+  }
+  return fromCookie || fromStorage
 }
 
 export const setStoredCart = (cart: string): void => {
   localStorage.setItem(CART_KEY, cart)
+  document.cookie = `${CART_KEY}=${cart}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`
 }
 
 export const removeStoredCart = (): void => {
   localStorage.removeItem(CART_KEY)
+  document.cookie = `${CART_KEY}=; path=/; max-age=0; SameSite=Lax`
 }
 
 // ============ SORT CART ITEMS ============

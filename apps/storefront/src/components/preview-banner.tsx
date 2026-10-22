@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useParams } from "@tanstack/react-router"
+import { useCountryCode } from "@/lib/hooks/use-country-code"
 import { useAuth } from "@/lib/hooks/use-auth"
 
 const DEMO_EMAIL = import.meta.env.VITE_PREVIEW_DEMO_EMAIL as string | undefined
@@ -14,8 +14,7 @@ export function PreviewBanner({ forceShow = false }: PreviewBannerProps) {
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { login } = useAuth()
-  const params = useParams({ strict: false }) as { countryCode?: string }
-  const countryCode = params.countryCode || "us"
+  const countryCode = useCountryCode()
 
   if (!forceShow || isDismissed) {
     return null

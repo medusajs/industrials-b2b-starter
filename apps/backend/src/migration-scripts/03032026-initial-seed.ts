@@ -15,6 +15,7 @@ import {
   createInventoryLevelsWorkflow,
 } from "@medusajs/medusa/core-flows";
 import { CreateProductCategoryDTO, MedusaContainer } from "@medusajs/framework/types";
+import { DEFAULT_REGION_STORE_POLICIES } from "../utils/region-store-policies";
 
 export default async function migration_03032026_initial_seed({
   container,
@@ -78,6 +79,7 @@ export default async function migration_03032026_initial_seed({
             name: "United States",
             currency_code: "usd",
             countries: ["us"],
+            metadata: DEFAULT_REGION_STORE_POLICIES.us,
             payment_providers: ["pp_system_default"],
             automatic_taxes: false,
             is_tax_inclusive: false,
@@ -86,6 +88,7 @@ export default async function migration_03032026_initial_seed({
             name: "Europe",
             currency_code: "eur",
             countries: ["de", "se", "fr", "es", "it"],
+            metadata: DEFAULT_REGION_STORE_POLICIES.de,
             payment_providers: ["pp_system_default"],
             automatic_taxes: true,
             is_tax_inclusive: true,
@@ -94,6 +97,7 @@ export default async function migration_03032026_initial_seed({
             name: "United Kingdom",
             currency_code: "gbp",
             countries: ["gb"],
+            metadata: DEFAULT_REGION_STORE_POLICIES.gb,
             payment_providers: ["pp_system_default"],
             automatic_taxes: true,
             is_tax_inclusive: true,
@@ -102,6 +106,7 @@ export default async function migration_03032026_initial_seed({
             name: "Denmark",
             currency_code: "dkk",
             countries: ["dk"],
+            metadata: DEFAULT_REGION_STORE_POLICIES.dk,
             payment_providers: ["pp_system_default"],
             automatic_taxes: true,
             is_tax_inclusive: true,

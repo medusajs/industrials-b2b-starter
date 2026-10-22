@@ -1,4 +1,5 @@
-import { Link, useParams } from "@tanstack/react-router"
+import { Link } from "@tanstack/react-router"
+import { useCountryCode } from "@/lib/hooks/use-country-code"
 import { useState } from "react"
 import { ProLiftMark } from "@/components/prolift-mark"
 import { SearchDrawer } from "@/components/search/search-drawer"
@@ -8,8 +9,7 @@ interface PublicHeaderProps {
 }
 
 export function PublicHeader({ bannerVisible = false }: PublicHeaderProps) {
-  const params = useParams({ strict: false }) as { countryCode?: string }
-  const countryCode = params.countryCode || "us"
+  const countryCode = useCountryCode()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
@@ -55,7 +55,10 @@ export function PublicHeader({ bannerVisible = false }: PublicHeaderProps) {
             
             {/* Mobile menu button */}
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
               className="md:hidden p-2 text-gray-600 hover:text-gray-900 cursor-pointer"
             >
               {mobileMenuOpen ? (

@@ -1,3 +1,4 @@
+import { useCountryCode } from "@/lib/hooks/use-country-code"
 import {
   Drawer,
   DrawerContent,
@@ -10,9 +11,9 @@ import { SearchHit, type ProductHit } from "@/components/search/search-hit"
 import { useDebouncedSearchBox } from "@/lib/hooks/use-debounced-search-box"
 import { useSearchSettled } from "@/lib/hooks/use-search-settled"
 import { PRODUCT_INDEX_NAME, searchClient } from "@/lib/search-client"
-import { getCountryCodeFromPath } from "@/lib/utils/region"
+import { webMcpTool } from "@/lib/utils/webmcp"
 import { MagnifyingGlass } from "@medusajs/icons"
-import { useLocation } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router"
 import type { SearchClient } from "instantsearch.js"
 import { useState } from "react"
 import {
@@ -38,6 +39,7 @@ const SearchPanel = ({ countryCode, onNavigate }: SearchPanelProps) => {
     isPending,
   } = useDebouncedSearchBox()
 
+  const navigate = useNavigate()
   const { items } = useHits<ProductHit>()
   const { status, error } = useInstantSearch()
   const { isSettled, hasNoResultsYet, resultsQuery } = useSearchSettled()
@@ -50,10 +52,26 @@ const SearchPanel = ({ countryCode, onNavigate }: SearchPanelProps) => {
 
   return (
     <>
-      <div className="flex items-center gap-x-3 border-b border-zinc-200 px-6">
+      <form
+        role="search"
+        method="get"
+        action={`/${countryCode}/search`}
+        onSubmit={(event) => {
+          event.preventDefault()
+          onNavigate()
+          navigate({
+            to: "/$countryCode/search",
+            params: { countryCode },
+            search: { q: trimmedQuery || undefined },
+          })
+        }}
+        className="flex items-center gap-x-3 border-b border-zinc-200 px-6"
+        {...webMcpTool("search_products", "Search the equipment catalog by keyword.")}
+      >
         <MagnifyingGlass className="flex-shrink-0 text-zinc-400" />
         <input
           type="search"
+          name="q"
           value={inputValue}
           onChange={(event) => setValue(event.target.value)}
           placeholder="Search equipment..."
@@ -62,7 +80,7 @@ const SearchPanel = ({ countryCode, onNavigate }: SearchPanelProps) => {
           className="w-full bg-transparent py-4 text-base text-zinc-900 outline-none focus-visible:outline-none! placeholder:text-zinc-400"
           data-testid="search-input"
         />
-      </div>
+      </form>
 
       <div className="flex-1 overflow-y-auto">
         {!hasInput ? (
@@ -123,8 +141,7 @@ export const SearchDrawer = ({
   triggerLabel,
 }: SearchDrawerProps = {}) => {
   const [isOpen, setIsOpen] = useState(false)
-  const location = useLocation()
-  const countryCode = getCountryCodeFromPath(location.pathname) || "us"
+  const countryCode = useCountryCode()
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>

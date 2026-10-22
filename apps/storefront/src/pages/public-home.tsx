@@ -1,4 +1,4 @@
-import { useParams } from "@tanstack/react-router"
+import { useCountryCode } from "@/lib/hooks/use-country-code"
 import type { HttpTypes } from "@medusajs/types"
 import { PublicProductCard } from "@/components/public-product-card"
 
@@ -8,14 +8,7 @@ interface PublicHomePageProps {
 }
 
 export function PublicHomePage({ products = [], categories = [] }: PublicHomePageProps) {
-  // Don't use useParams during SSR - use a safe default
-  let countryCode = "us"
-  try {
-    const params = useParams({ strict: false }) as { countryCode?: string }
-    countryCode = params.countryCode || "us"
-  } catch {
-    // During SSR, useParams might fail - use default
-  }
+  const countryCode = useCountryCode()
 
   // Stats data
   const stats = [
@@ -185,7 +178,7 @@ export function PublicHomePage({ products = [], categories = [] }: PublicHomePag
             {categories.map((category) => (
               <a
                 key={category.id}
-                href={`/${countryCode}/store?category=${category.id}`}
+                href={`/${countryCode}/categories/${category.handle}`}
                 className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-teal-200 transition-all group"
               >
                 <div className="w-12 h-12 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-teal-100 transition-colors">

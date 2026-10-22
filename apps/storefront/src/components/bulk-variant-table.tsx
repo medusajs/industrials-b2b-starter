@@ -4,6 +4,7 @@ import { useAddToCart } from "@/lib/hooks/use-cart"
 import { isVariantInStock } from "@/lib/utils/product"
 import { getPricesForVariant } from "@/lib/utils/price"
 import { getCountryCodeFromPath } from "@/lib/utils/region"
+import { webMcpTool } from "@/lib/utils/webmcp"
 import { HttpTypes } from "@medusajs/types"
 import { useLocation } from "@tanstack/react-router"
 import { useState, useMemo, useCallback } from "react"
@@ -68,6 +69,8 @@ export function BulkVariantTable({ product, region }: BulkVariantTableProps) {
     [quantities]
   )
 
+  const anyInStock = variants.some(isVariantInStock)
+
   const handleAddToCart = async () => {
     const itemsToAdd = variants.filter(
       (v) => (quantities[v.id] || 0) > 0 && isVariantInStock(v)
@@ -94,7 +97,19 @@ export function BulkVariantTable({ product, region }: BulkVariantTableProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <form
+      method="post"
+      action={`/${countryCode}/cart/add`}
+      onSubmit={(event) => {
+        event.preventDefault()
+        handleAddToCart()
+      }}
+      className="space-y-4"
+      {...webMcpTool(
+        "add_to_cart",
+        "Add one or more variants of this product to the cart. Set a quantity for each variant row."
+      )}
+    >
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead>
@@ -164,14 +179,19 @@ export function BulkVariantTable({ product, region }: BulkVariantTableProps) {
                   <td className="py-3 px-4">
                     <div className="flex items-center justify-center gap-1">
                       <button
+                        type="button"
+                        aria-label={`Decrease quantity for ${variant.title}`}
                         onClick={() => setQuantity(variant.id, qty - 1)}
                         disabled={!inStock || qty <= 0}
                         className="w-7 h-7 flex items-center justify-center rounded border border-border text-text-muted hover:bg-slate-100 hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
                       >
                         <Minus className="w-3 h-3" />
                       </button>
+                      <input type="hidden" name="variant_id" value={variant.id} disabled={!inStock} />
                       <input
                         type="number"
+                        name="quantity"
+                        aria-label={`Quantity for ${variant.title}`}
                         min={0}
                         value={qty}
                         onChange={(e) =>
@@ -181,6 +201,8 @@ export function BulkVariantTable({ product, region }: BulkVariantTableProps) {
                         className="w-12 h-7 text-center text-sm font-medium border border-border rounded bg-surface text-text-primary focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                       <button
+                        type="button"
+                        aria-label={`Increase quantity for ${variant.title}`}
                         onClick={() => setQuantity(variant.id, qty + 1)}
                         disabled={!inStock}
                         className="w-7 h-7 flex items-center justify-center rounded border border-border text-text-muted hover:bg-slate-100 hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
@@ -199,8 +221,8 @@ export function BulkVariantTable({ product, region }: BulkVariantTableProps) {
 
       <div className="flex items-center justify-end">
         <button
-          onClick={handleAddToCart}
-          disabled={isAdding || totalItems === 0}
+          type="submit"
+          disabled={!anyInStock || isAdding || totalItems === 0}
           className="flex items-center gap-2 px-5 py-2.5 bg-accent text-white font-medium rounded-lg hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
         >
           {isAdding ? (
@@ -208,9 +230,9 @@ export function BulkVariantTable({ product, region }: BulkVariantTableProps) {
           ) : (
             <ShoppingCart className="w-4 h-4" />
           )}
-          Add to Cart
+          {anyInStock ? "Add to cart" : "Sold out"}
         </button>
       </div>
-    </div>
+    </form>
   )
 }

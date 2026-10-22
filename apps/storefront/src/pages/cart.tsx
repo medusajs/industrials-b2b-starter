@@ -12,24 +12,38 @@ import { useCart, useCreateCart } from "@/lib/hooks/use-cart"
 import { useCreateQuoteFromCart } from "@/lib/hooks/use-quotes"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { sortCartItems, getStoredCart } from "@/lib/utils/cart"
+import { queryKeys } from "@/lib/utils/query-keys"
+import { useQueryClient } from "@tanstack/react-query"
 import { ShoppingCart, DocumentText } from "@medusajs/icons"
+import { sdk } from "@/lib/utils/sdk"
 import { Link, useLoaderData, useNavigate } from "@tanstack/react-router"
+import { useEffect } from "react"
 import { toast } from "sonner"
 
 const DEFAULT_CART_FIELDS =
-  "id, *items, total, currency_code, subtotal, item_subtotal, shipping_total, discount_total, tax_total, *promotions"
+  "id, customer_id, *items, total, currency_code, subtotal, item_subtotal, shipping_total, discount_total, tax_total, *promotions"
 
 const Cart = () => {
   const { region, countryCode } = useLoaderData({
     from: "/$countryCode/cart",
   })
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const { data: cart, isLoading: cartLoading } = useCart({
     fields: DEFAULT_CART_FIELDS,
   })
   const createCartMutation = useCreateCart()
   const createQuoteFromCartMutation = useCreateQuoteFromCart()
   const { isAuthenticated } = useAuth()
-  const navigate = useNavigate()
+
+  // Carts created by agents (/buy permalinks, UCP, the add-to-cart form) start as guest carts.
+  useEffect(() => {
+    if (!isAuthenticated || !cart?.id || cart.customer_id) return
+    sdk.store.cart
+      .transferCart(cart.id)
+      .then(() => queryClient.invalidateQueries({ predicate: queryKeys.cart.predicate }))
+      .catch(() => undefined)
+  }, [isAuthenticated, cart?.id, cart?.customer_id, queryClient])
 
   // Auto-create cart if none exists
   if (!cart && !cartLoading && !createCartMutation.isPending) {

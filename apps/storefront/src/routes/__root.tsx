@@ -1,5 +1,12 @@
 import Layout from "@/components/layout"
 import { listRegions } from "@/lib/data/regions"
+import { getDefaultCountryCode } from "@/lib/utils/region"
+import { listCategories } from "@/lib/data/categories"
+import {
+  FOOTER_CATEGORY_FIELDS,
+  FOOTER_CATEGORY_PARAMS,
+} from "@/components/public-footer"
+import { queryKeys } from "@/lib/utils/query-keys"
 import { CartProvider } from "@/lib/context/cart"
 import { AuthProvider } from "@/lib/context/auth-context"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
@@ -20,13 +27,19 @@ export const Route = createRootRouteWithContext<{
   loader: async ({ context }) => {
     const { queryClient } = context
     
-    // Pre-populate regions cache
-    await queryClient.ensureQueryData({
-      queryKey: ["regions"],
-      queryFn: () => listRegions({ fields: "id, name, currency_code, *countries" }),
-    })
-    
-    return {}
+    const [regions] = await Promise.all([
+      queryClient.ensureQueryData({
+        queryKey: ["regions"],
+        queryFn: () => listRegions(),
+      }),
+      queryClient.ensureQueryData({
+        queryKey: queryKeys.categories.list(FOOTER_CATEGORY_FIELDS, FOOTER_CATEGORY_PARAMS),
+        queryFn: () =>
+          listCategories({ fields: FOOTER_CATEGORY_FIELDS, queryParams: FOOTER_CATEGORY_PARAMS }),
+      }),
+    ])
+
+    return { defaultCountryCode: getDefaultCountryCode(regions) }
   },
   head: () => ({
     links: [
@@ -34,6 +47,7 @@ export const Route = createRootRouteWithContext<{
       { rel: "shortcut icon", href: "/images/prolift-favicon.svg" },
       { rel: "apple-touch-icon", href: "/images/prolift-favicon.svg" },
       { rel: "stylesheet", href: appCss },
+      { rel: "ucp", href: "/.well-known/ucp" },
     ],
     meta: [
       { title: "ProLift Equipment" },

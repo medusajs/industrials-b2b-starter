@@ -4,6 +4,8 @@ import { getRegion } from "@/lib/data/regions"
 import Category from "@/pages/category"
 import { HttpTypes } from "@medusajs/types"
 import { sanitize } from "@/lib/utils/sanitize"
+import { listProducts } from "@/lib/data/products"
+import { queryKeys } from "@/lib/utils/query-keys"
 
 export const Route = createFileRoute("/$countryCode/categories/$handle")({
   loader: async ({ params, context }) => {
@@ -32,10 +34,20 @@ export const Route = createFileRoute("/$countryCode/categories/$handle")({
       },
     })
 
+    const { products } = await queryClient.ensureQueryData({
+      queryKey: queryKeys.products.list({ category_id: category!.id }, region.id),
+      queryFn: () =>
+        listProducts({
+          query_params: { category_id: [category!.id], limit: 100 },
+          region_id: region.id,
+        }),
+    })
+
     return sanitize({
       countryCode,
       region,
       category: category as HttpTypes.StoreProductCategory,
+      products,
     })
   },
   head: ({ loaderData }) => {

@@ -1,5 +1,5 @@
-import { useParams } from "@tanstack/react-router"
 import type { HttpTypes } from "@medusajs/types"
+import { useCountryCode } from "@/lib/hooks/use-country-code"
 
 interface PublicProductCardProps {
   product: HttpTypes.StoreProduct
@@ -7,11 +7,10 @@ interface PublicProductCardProps {
 }
 
 export function PublicProductCard({ product, isNew = false }: PublicProductCardProps) {
-  const params = useParams({ strict: false }) as { countryCode?: string }
-  const countryCode = params.countryCode || "us"
+  const countryCode = useCountryCode()
 
   const thumbnail = product.thumbnail || product.images?.[0]?.url
-  const sku = product.variants?.[0]?.sku || "N/A"
+  const sku = product.variants?.[0]?.sku
   const category = product.categories?.[0]?.name || product.type?.value || "Equipment"
 
 
@@ -54,9 +53,11 @@ export function PublicProductCard({ product, isNew = false }: PublicProductCardP
         </a>
         
         {/* SKU */}
-        <p className="text-xs text-gray-500 mb-3 font-mono">
-          {sku}
-        </p>
+        {sku && (
+          <p className="text-xs text-gray-500 mb-3 font-mono">
+            {sku}
+          </p>
+        )}
 
         {/* Actions - Sign in for pricing - push to bottom */}
         <div className="mt-auto">
