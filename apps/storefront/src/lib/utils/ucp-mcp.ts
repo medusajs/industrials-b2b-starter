@@ -144,7 +144,7 @@ const TOOLS: Record<string, Tool> = {
     run: (request, args) => createCheckout(request, nested(args, "checkout"), idempotencyKey(args)),
   },
   get_checkout: {
-    description: "Get a checkout session by ID, including the order once the buyer has paid.",
+    description: "Get a checkout session by ID. Its status is completed once the buyer has paid.",
     inputSchema: object({ meta, id }, ["id"]),
     run: (request, args) => getCheckout(request, idArg(args)),
   },

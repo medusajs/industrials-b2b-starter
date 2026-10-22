@@ -323,18 +323,7 @@ const applyCheckoutDetails = async (
   return null
 }
 
-const findOrder = async (cartId: string) => {
-  try {
-    const { order } = await sdk.client.fetch<{ order: { id: string; display_id: number } }>(
-      `/store/ucp/checkouts/${cartId}/order`
-    )
-    return order
-  } catch {
-    return null
-  }
-}
-
-const toUcpCheckoutBody = async (request: Request, cart: HttpTypes.StoreCart) => {
+const toUcpCheckoutBody = (request: Request, cart: HttpTypes.StoreCart) => {
   const origin = getRequestOrigin(request)
   const countryCode = cartCountryCode(cart)
   const base = `${origin}/${countryCode}`
@@ -348,10 +337,9 @@ const toUcpCheckoutBody = async (request: Request, cart: HttpTypes.StoreCart) =>
     },
   ].filter(Boolean) as { path: string; content: string }[]
 
-  const order = cart.completed_at ? await findOrder(cart.id) : null
   const status = isCanceled(cart)
     ? "canceled"
-    : order
+    : cart.completed_at
       ? "completed"
       : missing.length
         ? "incomplete"
@@ -391,9 +379,6 @@ const toUcpCheckoutBody = async (request: Request, cart: HttpTypes.StoreCart) =>
       { type: "refund_policy", url: `${base}/returns` },
       { type: "shipping_policy", url: `${base}/shipping` },
     ],
-    order: order
-      ? { id: order.id, permalink_url: `${base}/order/${order.id}/confirmed` }
-      : undefined,
     continue_url: isOpen ? cartContinueUrl(origin, cart) : undefined,
     messages: isOpen
       ? [
@@ -458,13 +443,13 @@ export const createCheckout = async (
 
   const updated = await retrieveCart(cart.id)
   return updated
-    ? ucpResult(CHECKOUT, await toUcpCheckoutBody(request, updated), 201)
+    ? ucpResult(CHECKOUT, toUcpCheckoutBody(request, updated), 201)
     : checkoutNotFound()
 }
 
 export const getCheckout = async (request: Request, id: string): Promise<UcpResult> => {
   const cart = await retrieveCart(id)
-  return cart ? ucpResult(CHECKOUT, await toUcpCheckoutBody(request, cart)) : checkoutNotFound()
+  return cart ? ucpResult(CHECKOUT, toUcpCheckoutBody(request, cart)) : checkoutNotFound()
 }
 
 export const updateCheckout = async (
@@ -490,7 +475,7 @@ export const updateCheckout = async (
 
   const updated = await retrieveCart(cart.id)
   return updated
-    ? ucpResult(CHECKOUT, await toUcpCheckoutBody(request, updated))
+    ? ucpResult(CHECKOUT, toUcpCheckoutBody(request, updated))
     : checkoutNotFound()
 }
 
@@ -512,6 +497,6 @@ export const cancelCheckout = async (request: Request, id: string): Promise<UcpR
   }
   const updated = await retrieveCart(cart.id)
   return updated
-    ? ucpResult(CHECKOUT, await toUcpCheckoutBody(request, updated))
+    ? ucpResult(CHECKOUT, toUcpCheckoutBody(request, updated))
     : checkoutNotFound()
 }
