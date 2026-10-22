@@ -1,4 +1,5 @@
-import { Link, useParams, useLoaderData } from "@tanstack/react-router"
+import { Link, useLoaderData } from "@tanstack/react-router"
+import { useCountryCode } from "@/lib/hooks/use-country-code"
 import type { HttpTypes } from "@medusajs/types"
 import { useLatestProducts } from "@/lib/hooks/use-products"
 import { useCategories } from "@/lib/hooks/use-categories"
@@ -46,8 +47,7 @@ function ActivityIcon({ type }: { type: RecentActivity["type"] }) {
 }
 
 export default function Home() {
-  const params = useParams({ strict: false }) as { countryCode?: string }
-  const countryCode = params.countryCode || "us"
+  const countryCode = useCountryCode()
   const loaderData = useLoaderData({ strict: false }) as { region?: HttpTypes.StoreRegion } | undefined
   const region = loaderData?.region
   const { isAuthenticated, isLoading: authLoading } = useAuth()

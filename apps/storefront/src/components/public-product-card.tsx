@@ -1,5 +1,5 @@
-import { useParams } from "@tanstack/react-router"
 import type { HttpTypes } from "@medusajs/types"
+import { useCountryCode } from "@/lib/hooks/use-country-code"
 
 interface PublicProductCardProps {
   product: HttpTypes.StoreProduct
@@ -7,8 +7,7 @@ interface PublicProductCardProps {
 }
 
 export function PublicProductCard({ product, isNew = false }: PublicProductCardProps) {
-  const params = useParams({ strict: false }) as { countryCode?: string }
-  const countryCode = params.countryCode || "us"
+  const countryCode = useCountryCode()
 
   const thumbnail = product.thumbnail || product.images?.[0]?.url
   const sku = product.variants?.[0]?.sku

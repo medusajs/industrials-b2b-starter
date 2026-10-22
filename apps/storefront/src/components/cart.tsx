@@ -1,3 +1,4 @@
+import { useCountryCode } from "@/lib/hooks/use-country-code"
 import { Button } from "@/components/ui/button"
 import {
   Drawer,
@@ -19,12 +20,11 @@ import {
   useRemovePromoCode,
 } from "@/lib/hooks/use-cart"
 import { sortCartItems } from "@/lib/utils/cart"
-import { getCountryCodeFromPath } from "@/lib/utils/region"
 import { getPricePercentageDiff } from "@/lib/utils/price"
 import { useCartDrawer } from "@/lib/context/cart"
 import { Minus, Plus, Trash, XMark } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
-import { Link, useLocation } from "@tanstack/react-router"
+import { Link } from "@tanstack/react-router"
 import { clsx } from "clsx"
 import { useState } from "react"
 
@@ -431,8 +431,7 @@ export const CartPromo = ({ cart }: CartPromoProps) => {
 
 
 export const CartEmpty = () => {
-  const location = useLocation()
-  const countryCode = getCountryCodeFromPath(location.pathname) || "us"
+  const countryCode = useCountryCode()
 
   return (
     <div className="flex flex-col items-center justify-center py-16 px-6">
@@ -472,8 +471,7 @@ export const CartDropdown = () => {
   const { data: cart } = useCart({
     fields: DEFAULT_CART_DROPDOWN_FIELDS,
   })
-  const location = useLocation()
-  const countryCode = getCountryCodeFromPath(location.pathname) || "us"
+  const countryCode = useCountryCode()
 
   const sortedItems = sortCartItems(cart?.items || [])
   const itemCount = sortedItems?.reduce((total, item) => total + item.quantity, 0) || 0

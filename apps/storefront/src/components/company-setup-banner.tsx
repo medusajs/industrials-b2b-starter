@@ -1,4 +1,5 @@
-import { useParams, useNavigate } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router"
+import { useCountryCode } from "@/lib/hooks/use-country-code"
 import {
   useCompanySetupStatus,
   type CompanySetupStep,
@@ -89,8 +90,7 @@ function SetupStepCard({
 }
 
 export function CompanySetupBanner() {
-  const params = useParams({ strict: false }) as { countryCode?: string }
-  const countryCode = params.countryCode || "us"
+  const countryCode = useCountryCode()
   const { isAdmin } = useAuth()
   const { data: setupStatus, isLoading } = useCompanySetupStatus()
 

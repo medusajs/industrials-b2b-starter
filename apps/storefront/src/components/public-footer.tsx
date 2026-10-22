@@ -1,4 +1,5 @@
-import { Link, useParams } from "@tanstack/react-router"
+import { Link } from "@tanstack/react-router"
+import { useCountryCode } from "@/lib/hooks/use-country-code"
 import { ProLiftMark } from "@/components/prolift-mark"
 import { useCategories } from "@/lib/hooks/use-categories"
 import { POLICY_PAGES } from "@/lib/constants/policy-pages"
@@ -7,8 +8,7 @@ export const FOOTER_CATEGORY_FIELDS = "id,name,handle"
 export const FOOTER_CATEGORY_PARAMS = { parent_category_id: "null", limit: 6 }
 
 export function PublicFooter() {
-  const params = useParams({ strict: false }) as { countryCode?: string }
-  const countryCode = params.countryCode || "us"
+  const countryCode = useCountryCode()
   const { data: categories = [] } = useCategories({
     fields: FOOTER_CATEGORY_FIELDS,
     queryParams: FOOTER_CATEGORY_PARAMS,

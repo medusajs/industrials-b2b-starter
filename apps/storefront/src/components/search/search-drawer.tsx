@@ -1,3 +1,4 @@
+import { useCountryCode } from "@/lib/hooks/use-country-code"
 import {
   Drawer,
   DrawerContent,
@@ -10,10 +11,9 @@ import { SearchHit, type ProductHit } from "@/components/search/search-hit"
 import { useDebouncedSearchBox } from "@/lib/hooks/use-debounced-search-box"
 import { useSearchSettled } from "@/lib/hooks/use-search-settled"
 import { PRODUCT_INDEX_NAME, searchClient } from "@/lib/search-client"
-import { getCountryCodeFromPath } from "@/lib/utils/region"
 import { webMcpTool } from "@/lib/utils/webmcp"
 import { MagnifyingGlass } from "@medusajs/icons"
-import { useLocation, useNavigate } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router"
 import type { SearchClient } from "instantsearch.js"
 import { useState } from "react"
 import {
@@ -141,8 +141,7 @@ export const SearchDrawer = ({
   triggerLabel,
 }: SearchDrawerProps = {}) => {
   const [isOpen, setIsOpen] = useState(false)
-  const location = useLocation()
-  const countryCode = getCountryCodeFromPath(location.pathname) || "us"
+  const countryCode = useCountryCode()
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>

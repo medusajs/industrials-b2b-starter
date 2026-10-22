@@ -1,4 +1,4 @@
-import { useParams } from "@tanstack/react-router"
+import { useCountryCode } from "@/lib/hooks/use-country-code"
 import type { HttpTypes } from "@medusajs/types"
 import { PublicProductCard } from "@/components/public-product-card"
 
@@ -8,14 +8,7 @@ interface PublicHomePageProps {
 }
 
 export function PublicHomePage({ products = [], categories = [] }: PublicHomePageProps) {
-  // Don't use useParams during SSR - use a safe default
-  let countryCode = "us"
-  try {
-    const params = useParams({ strict: false }) as { countryCode?: string }
-    countryCode = params.countryCode || "us"
-  } catch {
-    // During SSR, useParams might fail - use default
-  }
+  const countryCode = useCountryCode()
 
   // Stats data
   const stats = [

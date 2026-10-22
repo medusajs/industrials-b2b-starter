@@ -1,5 +1,6 @@
 import Layout from "@/components/layout"
 import { listRegions } from "@/lib/data/regions"
+import { getDefaultCountryCode } from "@/lib/utils/region"
 import { listCategories } from "@/lib/data/categories"
 import {
   FOOTER_CATEGORY_FIELDS,
@@ -26,8 +27,7 @@ export const Route = createRootRouteWithContext<{
   loader: async ({ context }) => {
     const { queryClient } = context
     
-    // Pre-populate regions cache
-    await Promise.all([
+    const [regions] = await Promise.all([
       queryClient.ensureQueryData({
         queryKey: ["regions"],
         queryFn: () => listRegions(),
@@ -38,8 +38,8 @@ export const Route = createRootRouteWithContext<{
           listCategories({ fields: FOOTER_CATEGORY_FIELDS, queryParams: FOOTER_CATEGORY_PARAMS }),
       }),
     ])
-    
-    return {}
+
+    return { defaultCountryCode: getDefaultCountryCode(regions) }
   },
   head: () => ({
     links: [

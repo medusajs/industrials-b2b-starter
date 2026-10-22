@@ -1,21 +1,10 @@
 import { listRegions } from "@/lib/data/regions"
 import { COUNTRY_CODE_KEY, getDefaultCountryCode } from "@/lib/utils/region"
 import { createServerFn } from "@tanstack/react-start"
-import { getRequestHeaders, setResponseHeader } from "@tanstack/react-start/server"
+import { getCookie, setResponseHeader } from "@tanstack/react-start/server"
 
 export const getStoredCountryCode = createServerFn().handler(async () => {
-  const headers = getRequestHeaders()
-
-  let countryCode: string | undefined
-
-  if (headers?.cookie) {
-    const cookies = headers.cookie.split("; ")
-    const countryCodeCookie = cookies.find((row: string) =>
-      row.startsWith(`${COUNTRY_CODE_KEY}=`)
-    )
-
-    countryCode = countryCodeCookie?.split("=")[1]
-  }
+  let countryCode = getCookie(COUNTRY_CODE_KEY)
 
   if (!countryCode) {
     const maxAge = 60 * 60 * 24 * 365 // 1 year in seconds
