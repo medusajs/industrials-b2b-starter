@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
+import { getPaymentMethodInfo } from "@/lib/constants/payment-methods"
 import { Link, useParams, useNavigate } from "@tanstack/react-router"
 import { useAuth } from "@/lib/hooks/use-auth"
 import {
@@ -52,6 +53,8 @@ interface CompanyAddressData {
 
 interface SavedPaymentMethod {
   id: string
+  /** The Stripe or Medusa Payments provider the payment method is saved with. */
+  provider_id: string
   data: {
     id: string
     card?: {
@@ -356,7 +359,9 @@ export default function OrderPaymentPage() {
   useEffect(() => {
     if (hasSavedPaymentMethods && !selectedSavedPaymentId) {
       setSelectedSavedPaymentId(savedPaymentMethods[0].data.id)
-      const stripeProvider = availablePaymentMethods.find((m) => m.id.includes("stripe"))
+      const stripeProvider = availablePaymentMethods.find(
+        (m) => m.id === savedPaymentMethods[0].provider_id
+      )
       if (stripeProvider) {
         setSelectedPaymentMethod(stripeProvider.id)
       }
@@ -433,7 +438,10 @@ export default function OrderPaymentPage() {
 
   const handlePayment = async () => {
     try {
-      await payOrderMutation.mutateAsync(orderId)
+      await payOrderMutation.mutateAsync({
+        orderId,
+        payment_method_id: selectedSavedPaymentId ?? undefined,
+      })
       toast.success("Payment successful! Your order is now being processed.")
       navigate({ to: `/${countryCode}/orders` })
     } catch (error: any) {
@@ -443,7 +451,9 @@ export default function OrderPaymentPage() {
 
   const handleSavedPaymentSelect = (method: SavedPaymentMethod) => {
     setSelectedSavedPaymentId(method.data.id)
-    const stripeProvider = availablePaymentMethods.find((m) => m.id.includes("stripe"))
+    const stripeProvider = availablePaymentMethods.find(
+      (m) => m.id === method.provider_id
+    )
     if (stripeProvider) {
       setSelectedPaymentMethod(stripeProvider.id)
     }
@@ -912,7 +922,8 @@ export default function OrderPaymentPage() {
                   <p className="text-gray-700">
                     {selectedPaymentMethod?.includes("stripe")
                       ? "Credit Card (Stripe)"
-                      : "Manual Payment"}
+                      : getPaymentMethodInfo(selectedPaymentMethod)?.title ||
+                        "Manual Payment"}
                   </p>
                 )}
               </div>

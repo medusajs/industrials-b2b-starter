@@ -21,6 +21,8 @@ import { CreditCard } from "@medusajs/icons"
 
 interface SavedPaymentMethod {
   id: string
+  /** The Stripe or Medusa Payments provider the payment method is saved with. */
+  provider_id: string
   data: {
     id: string
     card?: {
@@ -175,8 +177,8 @@ const PaymentStep = ({
   const handleSavedMethodSelect = useCallback(
     async (savedMethod: SavedPaymentMethod) => {
       setError(null)
-      const stripeProviderId = availablePaymentMethods.find((m) =>
-        isStripeFunc(m.id)
+      const stripeProviderId = availablePaymentMethods.find(
+        (m) => m.id === savedMethod.provider_id
       )?.id
       if (!stripeProviderId) return
 

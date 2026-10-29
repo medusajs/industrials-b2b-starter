@@ -1,10 +1,12 @@
 import { Elements } from "@stripe/react-stripe-js"
-import { loadStripe } from "@stripe/stripe-js"
 import { HttpTypes } from "@medusajs/types"
 import type { ReactNode } from "react"
-
-const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ""
-const stripePromise = stripeKey ? loadStripe(stripeKey) : null
+import {
+  getMedusaPaymentsAccount,
+  isMedusaPayments,
+  isStripe,
+} from "@/lib/utils/checkout"
+import { getStripePromiseFor } from "@/lib/utils/stripe"
 
 type StripeElementsProviderProps = {
   cart: HttpTypes.StoreCart
@@ -18,15 +20,26 @@ export function StripeElementsProvider({
   const activeSession = cart?.payment_collection?.payment_sessions?.find(
     (s) => s.status === "pending"
   )
-  const isStripeSelected = activeSession?.provider_id?.startsWith("pp_stripe_")
   const clientSecret = activeSession?.data?.client_secret as string | undefined
 
-  if (!clientSecret || !isStripeSelected) {
+  if (!clientSecret || !isStripe(activeSession?.provider_id)) {
     return <>{children}</>
   }
 
+  const isMedusa = isMedusaPayments(activeSession?.provider_id)
+  const stripeAccount = getMedusaPaymentsAccount(activeSession)
+  const stripePromise = getStripePromiseFor({
+    isMedusaPayments: isMedusa,
+    stripeAccount,
+  })
+
   return (
-    <Elements stripe={stripePromise} options={{ clientSecret }}>
+    <Elements
+      // Elements can't switch Stripe instances, so it remounts when the account changes.
+      key={`${isMedusa}:${stripeAccount ?? ""}`}
+      stripe={stripePromise}
+      options={{ clientSecret }}
+    >
       {children}
     </Elements>
   )

@@ -73,17 +73,24 @@ export const usePayOrder = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (orderId: string) => {
+    mutationFn: async ({
+      orderId,
+      payment_method_id,
+    }: {
+      orderId: string
+      /** The company payment method to charge, for card payments. */
+      payment_method_id?: string
+    }) => {
       const response = await sdk.client.fetch<{ order: any; payment: any }>(
         `/store/customers/me/orders/${orderId}/pay`,
         {
           method: "POST",
-          body: {},
+          body: { payment_method_id },
         }
       )
       return response
     },
-    onSuccess: (_, orderId) => {
+    onSuccess: (_, { orderId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.customer.orders() })
       queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(orderId) })
     },

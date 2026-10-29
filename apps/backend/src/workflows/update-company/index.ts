@@ -13,7 +13,7 @@ import {
   SpendLimitResetFrequency,
 } from "../../modules/company/models"
 import type { IPaymentModuleService } from "@medusajs/framework/types"
-import { isStripeConfigured } from "../../utils/is-stripe-configured"
+import { getSavedPaymentMethodsProviderId } from "../../utils/saved-payment-methods"
 
 export type UpdateCompanyInput = {
   id: string
@@ -92,7 +92,8 @@ const createAccountHolderStep = createStep(
     input: { company_id: string; company_email: string },
     { container }
   ) => {
-    if (!isStripeConfigured()) {
+    const providerId = getSavedPaymentMethodsProviderId()
+    if (!providerId) {
       return new StepResponse({ skipped: true }, null)
     }
 
@@ -112,7 +113,7 @@ const createAccountHolderStep = createStep(
     }
 
     const accountHolder = await paymentModuleService.createAccountHolder({
-      provider_id: "pp_stripe_stripe",
+      provider_id: providerId,
       context: {
         customer: {
           id: input.company_id,

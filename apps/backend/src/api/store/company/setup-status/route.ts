@@ -2,14 +2,14 @@ import type {
   AuthenticatedMedusaRequest,
   MedusaResponse,
 } from "@medusajs/framework/http"
-import {
-  ContainerRegistrationKeys,
-  MedusaError,
-  Modules,
-} from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils"
 import { COMPANY_MODULE } from "../../../../modules/company"
 import CompanyModuleService from "../../../../modules/company/service"
-import { isStripeConfigured } from "../../../../utils/is-stripe-configured"
+import {
+  isSavedPaymentMethodsEnabled,
+  listCompanyPaymentMethods,
+  retrieveCompanyAccountHolder,
+} from "../../../../utils/saved-payment-methods"
 
 export interface CompanySetupStep {
   key: string
@@ -106,35 +106,22 @@ export async function getCompanySetupStatus(
 
   const hasInvitedEmployee = pendingInviteCount > 0 || employees.length > 1
 
-  // Check saved payment methods (only if Stripe is configured)
+  // Check saved payment methods (only if Stripe or Medusa Payments is configured)
   let hasPaymentMethod = false
-  if (isStripeConfigured()) {
+  if (isSavedPaymentMethodsEnabled()) {
     try {
-      const { data: companies } = await query.graph({
-        entity: "company",
-        fields: ["id", "account_holder.*"],
-        filters: { id: companyId },
-      })
-
-      const accountHolder = (companies[0] as any)?.account_holder
-      if (accountHolder) {
-        const paymentModuleService = container.resolve(Modules.PAYMENT) as any
-        const paymentMethods = await paymentModuleService.listPaymentMethods({
-          provider_id: accountHolder.provider_id,
-          context: {
-            account_holder: {
-              data: { id: accountHolder.data?.id },
-            },
-          },
-        })
-        hasPaymentMethod = paymentMethods.length > 0
-      }
+      const { accountHolder } = await retrieveCompanyAccountHolder(
+        container,
+        companyId
+      )
+      hasPaymentMethod =
+        (await listCompanyPaymentMethods(container, accountHolder)).length > 0
     } catch {
       // If payment module errors, treat as not configured
     }
   }
 
-  const stepDefinitions: StepDefinition[] = isStripeConfigured()
+  const stepDefinitions: StepDefinition[] = isSavedPaymentMethodsEnabled()
     ? [...BASE_STEP_DEFINITIONS.slice(0, 2), PAYMENT_METHOD_STEP, BASE_STEP_DEFINITIONS[2]]
     : BASE_STEP_DEFINITIONS
 

@@ -1,5 +1,5 @@
 import Radio from "@/components/ui/radio"
-import { paymentMethodsData } from "@/lib/constants/payment-methods"
+import { getPaymentMethodInfo } from "@/lib/constants/payment-methods"
 import React from "react"
 
 type PaymentContainerProps = {
@@ -32,11 +32,11 @@ const PaymentContainer: React.FC<PaymentContainerProps> = ({
         <div className="flex items-center gap-x-4">
           <Radio checked={isSelected} readOnly />
           <p className="text-base font-medium">
-            {paymentMethodsData[paymentProviderId]?.title || paymentProviderId}
+            {getPaymentMethodInfo(paymentProviderId)?.title || paymentProviderId}
           </p>
         </div>
         <span className="justify-self-end text-zinc-900">
-          {paymentMethodsData[paymentProviderId]?.icon}
+          {getPaymentMethodInfo(paymentProviderId)?.icon}
         </span>
       </div>
       {children}

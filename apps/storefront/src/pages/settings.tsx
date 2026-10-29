@@ -7,11 +7,9 @@ import { toast } from "sonner"
 import { DashboardPageLayout } from "@/components/dashboard-page-layout"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Camera, Buildings, Plus, XMark, CreditCard, MapPin, PencilSquare } from "@medusajs/icons"
-import { loadStripe } from "@stripe/stripe-js"
+import type { Stripe } from "@stripe/stripe-js"
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js"
-
-const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ""
-const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null
+import { getStripePromiseFor, isCardPaymentsEnabled } from "@/lib/utils/stripe"
 
 interface ProfileFormData {
   first_name: string
@@ -191,6 +189,8 @@ function PaymentMethodsSection({ companyData }: { companyData: Company }) {
   const queryClient = useQueryClient()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [setupClientSecret, setSetupClientSecret] = useState<string | null>(null)
+  const [setupStripePromise, setSetupStripePromise] =
+    useState<Promise<Stripe | null> | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const { data: paymentMethods, isLoading: isLoadingMethods, refetch: refetchMethods } = useQuery({
@@ -207,14 +207,20 @@ function PaymentMethodsSection({ companyData }: { companyData: Company }) {
 
   const createSetupIntentMutation = useMutation({
     mutationFn: async () => {
-      const response = await sdk.client.fetch<{ client_secret: string }>(
-        "/store/company/payment-methods",
-        { method: "POST" }
-      )
-      return response.client_secret
+      return await sdk.client.fetch<{
+        client_secret: string
+        stripe_account?: string
+      }>("/store/company/payment-methods", { method: "POST" })
     },
-    onSuccess: (clientSecret) => {
-      setSetupClientSecret(clientSecret)
+    onSuccess: ({ client_secret, stripe_account }) => {
+      // Medusa Payments saves the card on a Stripe connected account, which the response names.
+      setSetupStripePromise(
+        getStripePromiseFor({
+          isMedusaPayments: !!stripe_account,
+          stripeAccount: stripe_account,
+        })
+      )
+      setSetupClientSecret(client_secret)
       setIsModalOpen(true)
     },
     onError: (error: Error) => {
@@ -369,9 +375,9 @@ function PaymentMethodsSection({ companyData }: { companyData: Company }) {
               Enter your card details below. Your card will be securely saved for future purchases.
             </DialogDescription>
           </DialogHeader>
-          {setupClientSecret && stripePromise ? (
+          {setupClientSecret && setupStripePromise ? (
             <Elements
-              stripe={stripePromise}
+              stripe={setupStripePromise}
               options={{
                 clientSecret: setupClientSecret,
                 appearance: {
@@ -1141,7 +1147,7 @@ export default function SettingsPage() {
     ...(isAdmin ? [
       { id: "company" as const, label: "Company" },
       { id: "addresses" as const, label: "Addresses" },
-      ...(stripePublishableKey ? [{ id: "payment_methods" as const, label: "Payment Methods" }] : []),
+      ...(isCardPaymentsEnabled ? [{ id: "payment_methods" as const, label: "Payment Methods" }] : []),
     ] : []),
   ]
 

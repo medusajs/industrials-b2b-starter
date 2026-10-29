@@ -2,47 +2,44 @@ import type {
   AuthenticatedMedusaRequest,
   MedusaResponse,
 } from "@medusajs/framework/http"
+import { MedusaError, Modules } from "@medusajs/framework/utils"
 import {
-  ContainerRegistrationKeys,
-  MedusaError,
-} from "@medusajs/framework/utils"
+  listCompanyPaymentMethods,
+  retrieveAdminCompany,
+  retrieveCompanyAccountHolder,
+} from "../../../../../utils/saved-payment-methods"
 
 export async function DELETE(
   req: AuthenticatedMedusaRequest,
   res: MedusaResponse
 ) {
-  const customerId = req.auth_context?.actor_id
-  if (!customerId) {
-    throw new MedusaError(MedusaError.Types.UNAUTHORIZED, "Unauthorized")
+  const company = await retrieveAdminCompany(req)
+  const { accountHolder } = await retrieveCompanyAccountHolder(
+    req.scope,
+    company.id
+  )
+
+  // Only the company's own payment methods can be removed.
+  const paymentMethods = await listCompanyPaymentMethods(
+    req.scope,
+    accountHolder
+  )
+  if (!accountHolder || !paymentMethods.some(({ id }) => id === req.params.id)) {
+    throw new MedusaError(
+      MedusaError.Types.NOT_FOUND,
+      `Payment method ${req.params.id} not found`
+    )
   }
 
-  const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
-
-  const { data: customers } = await query.graph({
-    entity: "customer",
-    fields: ["id", "employee.*", "employee.company.*"],
-    filters: { id: customerId },
+  await req.scope.resolve(Modules.PAYMENT).deletePaymentMethods({
+    id: req.params.id,
+    provider_id: accountHolder.provider_id,
+    context: {
+      account_holder: {
+        data: { id: accountHolder.data?.id },
+      },
+    },
   })
-
-  const employee = (customers[0] as any)?.employee
-  if (!employee?.is_admin) {
-    throw new MedusaError(
-      MedusaError.Types.UNAUTHORIZED,
-      "Only company admins can manage payment methods"
-    )
-  }
-
-  if (!process.env.STRIPE_API_KEY) {
-    throw new MedusaError(
-      MedusaError.Types.NOT_ALLOWED,
-      "Stripe is not configured. Cannot detach payment method."
-    )
-  }
-
-  const Stripe = require("stripe").default || require("stripe")
-  const stripe = new Stripe(process.env.STRIPE_API_KEY)
-
-  await stripe.paymentMethods.detach(req.params.id)
 
   res.json({ id: req.params.id, object: "payment_method", deleted: true })
 }

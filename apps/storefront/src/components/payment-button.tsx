@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button"
 import { useCompleteCartOrder } from "@/lib/hooks/use-checkout"
 import { isManual, isStripe } from "@/lib/utils/checkout"
 import { getCountryCodeFromPath } from "@/lib/utils/region"
+import { getPaymentErrorMessage } from "@/lib/utils/payment-error"
 import { HttpTypes } from "@medusajs/types"
 import { useStripe, useElements } from "@stripe/react-stripe-js"
 import { useLocation, useNavigate } from "@tanstack/react-router"
@@ -75,7 +76,7 @@ const StripePaymentButton = ({
         })
 
         if (error) {
-          setErrorMessage(error.message || "Payment failed")
+          setErrorMessage(getPaymentErrorMessage(error))
           setSubmitting(false)
           return
         }
@@ -84,7 +85,7 @@ const StripePaymentButton = ({
 
         const { error: submitError } = await elements.submit()
         if (submitError) {
-          setErrorMessage(submitError.message || "Payment submission failed")
+          setErrorMessage(getPaymentErrorMessage(submitError))
           setSubmitting(false)
           return
         }
@@ -98,7 +99,7 @@ const StripePaymentButton = ({
         })
 
         if (error) {
-          setErrorMessage(error.message || "Payment failed")
+          setErrorMessage(getPaymentErrorMessage(error))
           setSubmitting(false)
           return
         }
