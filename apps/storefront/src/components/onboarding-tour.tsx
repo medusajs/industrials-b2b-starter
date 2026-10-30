@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react"
+import { isCardPaymentsEnabled } from "@/lib/utils/stripe"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { sdk } from "@/lib/utils/sdk"
 
@@ -10,7 +11,7 @@ interface TourStep {
   adminOnly?: boolean
 }
 
-const isStripeEnabled = !!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+const isStripeEnabled = isCardPaymentsEnabled
 
 const TOUR_STEPS: TourStep[] = [
   {

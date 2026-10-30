@@ -7,11 +7,16 @@ import { toast } from "sonner"
 import { DashboardPageLayout } from "@/components/dashboard-page-layout"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Camera, Buildings, Plus, XMark, CreditCard, MapPin, PencilSquare } from "@medusajs/icons"
-import { loadStripe } from "@stripe/stripe-js"
+import type { Stripe } from "@stripe/stripe-js"
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js"
-
-const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ""
-const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null
+import { getStripePromiseFor, isCardPaymentsEnabled } from "@/lib/utils/stripe"
+import { isAdyen } from "@/lib/utils/checkout"
+import {
+  cardBrandLabel,
+  getSavedCardDetails,
+  type SavedPaymentMethod,
+} from "@/lib/utils/saved-payment-methods"
+import { AdyenAddCardForm } from "@/components/adyen-add-card-form"
 
 interface ProfileFormData {
   first_name: string
@@ -66,21 +71,6 @@ interface CompanyAddressData {
   is_billing_only: boolean
 }
 
-interface SavedPaymentMethod {
-  id: string
-  data: {
-    id: string
-    card?: {
-      brand: string
-      last4: string
-      exp_month: number
-      exp_year: number
-    }
-    type?: string
-    [key: string]: unknown
-  }
-}
-
 const RESET_FREQUENCY_OPTIONS: { value: SpendLimitResetFrequency; label: string; description: string }[] = [
   { value: "none", label: "Never", description: "Spending limits never reset" },
   { value: "daily", label: "Daily", description: "Resets every day at midnight" },
@@ -112,19 +102,6 @@ function CardSkeleton({ rows = 4 }: { rows?: number }) {
       </div>
     </div>
   )
-}
-
-function cardBrandLabel(brand: string): string {
-  const brands: Record<string, string> = {
-    visa: "Visa",
-    mastercard: "Mastercard",
-    amex: "American Express",
-    discover: "Discover",
-    diners: "Diners Club",
-    jcb: "JCB",
-    unionpay: "UnionPay",
-  }
-  return brands[brand] || brand.charAt(0).toUpperCase() + brand.slice(1)
 }
 
 function AddCardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
@@ -191,30 +168,49 @@ function PaymentMethodsSection({ companyData }: { companyData: Company }) {
   const queryClient = useQueryClient()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [setupClientSecret, setSetupClientSecret] = useState<string | null>(null)
+  const [setupStripePromise, setSetupStripePromise] =
+    useState<Promise<Stripe | null> | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  const { data: paymentMethods, isLoading: isLoadingMethods, refetch: refetchMethods } = useQuery({
+  const { data: paymentMethodsData, isLoading: isLoadingMethods, refetch: refetchMethods } = useQuery({
     queryKey: ["company-payment-methods"],
     queryFn: async () => {
-      const response = await sdk.client.fetch<{ payment_methods: SavedPaymentMethod[] }>(
-        "/store/company/payment-methods",
-        { method: "GET" }
-      )
-      return response.payment_methods
+      return await sdk.client.fetch<{
+        payment_methods: SavedPaymentMethod[]
+        provider_id?: string
+      }>("/store/company/payment-methods", { method: "GET" })
     },
     enabled: companyData.status === "active",
   })
+  const paymentMethods = paymentMethodsData?.payment_methods
+  // Adyen saves the card collected by its own form, while Stripe and Medusa Payments start a setup first.
+  const isAdyenProvider = isAdyen(paymentMethodsData?.provider_id)
+
+  const handleAddCard = () => {
+    if (isAdyenProvider) {
+      setIsModalOpen(true)
+      return
+    }
+
+    createSetupIntentMutation.mutate()
+  }
 
   const createSetupIntentMutation = useMutation({
     mutationFn: async () => {
-      const response = await sdk.client.fetch<{ client_secret: string }>(
-        "/store/company/payment-methods",
-        { method: "POST" }
-      )
-      return response.client_secret
+      return await sdk.client.fetch<{
+        client_secret: string
+        stripe_account?: string
+      }>("/store/company/payment-methods", { method: "POST" })
     },
-    onSuccess: (clientSecret) => {
-      setSetupClientSecret(clientSecret)
+    onSuccess: ({ client_secret, stripe_account }) => {
+      // Medusa Payments saves the card on a Stripe connected account, which the response names.
+      setSetupStripePromise(
+        getStripePromiseFor({
+          isMedusaPayments: !!stripe_account,
+          stripeAccount: stripe_account,
+        })
+      )
+      setSetupClientSecret(client_secret)
       setIsModalOpen(true)
     },
     onError: (error: Error) => {
@@ -282,7 +278,7 @@ function PaymentMethodsSection({ companyData }: { companyData: Company }) {
           </div>
           {hasPaymentMethods && (
             <button
-              onClick={() => createSetupIntentMutation.mutate()}
+              onClick={handleAddCard}
               disabled={createSetupIntentMutation.isPending}
               className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-accent hover:text-accent/80 transition-colors disabled:opacity-50"
             >
@@ -310,7 +306,7 @@ function PaymentMethodsSection({ companyData }: { companyData: Company }) {
               <CreditCard className="w-10 h-10 text-slate-300 mx-auto mb-3" />
               <p className="text-sm text-slate-500 mb-4">No payment methods saved yet.</p>
               <button
-                onClick={() => createSetupIntentMutation.mutate()}
+                onClick={handleAddCard}
                 disabled={createSetupIntentMutation.isPending}
                 className="px-6 py-2.5 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-50"
               >
@@ -320,7 +316,7 @@ function PaymentMethodsSection({ companyData }: { companyData: Company }) {
           ) : (
             <div className="space-y-3">
               {paymentMethods.map((method) => {
-                const card = method.data?.card
+                const card = getSavedCardDetails(method)
                 const isDeleting = deletingId === method.data?.id
                 return (
                   <div
@@ -338,7 +334,7 @@ function PaymentMethodsSection({ companyData }: { companyData: Company }) {
                       </p>
                       {card && (
                         <p className="text-xs text-slate-500 mt-0.5">
-                          Expires {String(card.exp_month).padStart(2, "0")}/{card.exp_year}
+                          Expires {String(card.expMonth).padStart(2, "0")}/{card.expYear}
                         </p>
                       )}
                     </div>
@@ -369,9 +365,11 @@ function PaymentMethodsSection({ companyData }: { companyData: Company }) {
               Enter your card details below. Your card will be securely saved for future purchases.
             </DialogDescription>
           </DialogHeader>
-          {setupClientSecret && stripePromise ? (
+          {isAdyenProvider ? (
+            <AdyenAddCardForm onSuccess={handleAddCardSuccess} onCancel={handleModalClose} />
+          ) : setupClientSecret && setupStripePromise ? (
             <Elements
-              stripe={stripePromise}
+              stripe={setupStripePromise}
               options={{
                 clientSecret: setupClientSecret,
                 appearance: {
@@ -1141,7 +1139,7 @@ export default function SettingsPage() {
     ...(isAdmin ? [
       { id: "company" as const, label: "Company" },
       { id: "addresses" as const, label: "Addresses" },
-      ...(stripePublishableKey ? [{ id: "payment_methods" as const, label: "Payment Methods" }] : []),
+      ...(isCardPaymentsEnabled ? [{ id: "payment_methods" as const, label: "Payment Methods" }] : []),
     ] : []),
   ]
 

@@ -2,11 +2,11 @@ import type {
   AuthenticatedMedusaRequest,
   MedusaResponse,
 } from "@medusajs/framework/http"
+import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import {
-  ContainerRegistrationKeys,
-  MedusaError,
-  Modules,
-} from "@medusajs/framework/utils"
+  listCompanyPaymentMethods,
+  retrieveCompanyAccountHolder,
+} from "../../../../utils/saved-payment-methods"
 
 export async function GET(
   req: AuthenticatedMedusaRequest,
@@ -38,28 +38,13 @@ export async function GET(
     return
   }
 
-  const { data: companies } = await query.graph({
-    entity: "company",
-    fields: ["id", "account_holder.*"],
-    filters: { id: company.id },
+  const { accountHolder } = await retrieveCompanyAccountHolder(
+    req.scope,
+    company.id
+  )
+
+  // Each payment method has the `provider_id` that checkout initiates its payment session with.
+  res.json({
+    payment_methods: await listCompanyPaymentMethods(req.scope, accountHolder),
   })
-
-  const accountHolder = (companies[0] as any)?.account_holder
-  if (!accountHolder) {
-    res.json({ payment_methods: [] })
-    return
-  }
-
-  const paymentModuleService = req.scope.resolve(Modules.PAYMENT) as any
-
-  const paymentMethods = await paymentModuleService.listPaymentMethods({
-    provider_id: accountHolder.provider_id,
-    context: {
-      account_holder: {
-        data: { id: accountHolder.data?.id },
-      },
-    },
-  })
-
-  res.json({ payment_methods: paymentMethods })
 }

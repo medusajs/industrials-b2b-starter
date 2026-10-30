@@ -2,14 +2,14 @@ import type {
   AuthenticatedMedusaRequest,
   MedusaResponse,
 } from "@medusajs/framework/http"
-import {
-  ContainerRegistrationKeys,
-  MedusaError,
-  Modules,
-} from "@medusajs/framework/utils"
+import { MedusaError } from "@medusajs/framework/utils"
 import { COMPANY_MODULE } from "../../../../../modules/company"
 import CompanyModuleService from "../../../../../modules/company/service"
-import { isStripeConfigured } from "../../../../../utils/is-stripe-configured"
+import {
+  isSavedPaymentMethodsEnabled,
+  listCompanyPaymentMethods,
+  retrieveCompanyAccountHolder,
+} from "../../../../../utils/saved-payment-methods"
 
 interface SetupStep {
   key: string
@@ -22,7 +22,6 @@ export async function GET(
   res: MedusaResponse
 ) {
   const companyId = req.params.id
-  const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
   const companyService: CompanyModuleService = req.scope.resolve(COMPANY_MODULE)
 
   let company
@@ -43,28 +42,18 @@ export async function GET(
     (addr: any) => addr.is_default_billing
   )
 
+  const savedPaymentMethodsEnabled = await isSavedPaymentMethodsEnabled(
+    req.scope
+  )
   let hasPaymentMethod = false
-  if (isStripeConfigured()) {
+  if (savedPaymentMethodsEnabled) {
     try {
-      const { data: companies } = await query.graph({
-        entity: "company",
-        fields: ["id", "account_holder.*"],
-        filters: { id: company.id },
-      })
-
-      const accountHolder = (companies[0] as any)?.account_holder
-      if (accountHolder?.data?.id) {
-        const paymentModuleService = req.scope.resolve(Modules.PAYMENT) as any
-        const paymentMethods = await paymentModuleService.listPaymentMethods({
-          provider_id: accountHolder.provider_id,
-          context: {
-            account_holder: {
-              data: { id: accountHolder.data.id },
-            },
-          },
-        })
-        hasPaymentMethod = paymentMethods.length > 0
-      }
+      const { accountHolder } = await retrieveCompanyAccountHolder(
+        req.scope,
+        company.id
+      )
+      hasPaymentMethod =
+        (await listCompanyPaymentMethods(req.scope, accountHolder)).length > 0
     } catch {
       hasPaymentMethod = false
     }
@@ -81,7 +70,7 @@ export async function GET(
       label: "Billing address",
       completed: hasBillingAddress,
     },
-    ...(isStripeConfigured()
+    ...(savedPaymentMethodsEnabled
       ? [
           {
             key: "payment_method",
