@@ -30,7 +30,7 @@ export async function GET(
   res.json({
     payment_methods: await listCompanyPaymentMethods(req.scope, accountHolder),
     // The storefront collects card details differently for each provider.
-    provider_id: getSavedPaymentMethodsProviderId(),
+    provider_id: await getSavedPaymentMethodsProviderId(req.scope),
   })
 }
 
@@ -40,11 +40,11 @@ export async function POST(
   req: AuthenticatedMedusaRequest<SavePaymentMethodRequestBody>,
   res: MedusaResponse
 ) {
-  const providerId = getSavedPaymentMethodsProviderId()
+  const providerId = await getSavedPaymentMethodsProviderId(req.scope)
   if (!providerId) {
     throw new MedusaError(
       MedusaError.Types.NOT_ALLOWED,
-      "Saved payment methods are not available. Configure Stripe or Medusa Payments."
+      "Saved payment methods are not available. Configure Medusa Payments."
     )
   }
 

@@ -7,25 +7,28 @@ import {
 } from "@medusajs/framework/utils"
 
 /**
- * Company payment methods are saved with your own Stripe account when it's configured, then Adyen, and otherwise with
- * Medusa Payments on Medusa Cloud, which registers a provider per payment account.
+ * Providers are registered as `pp_{provider}_{id}`, where `{id}` is the ID set in `medusa-config.ts`. Company payment
+ * methods are saved with your own Stripe account when it's registered, then Adyen, and otherwise with Medusa Payments
+ * on Medusa Cloud, which registers a provider per payment account.
  */
-export function getSavedPaymentMethodsProviderId(): string | undefined {
-  if (process.env.STRIPE_API_KEY) {
-    return "pp_stripe_stripe"
-  }
+const SAVED_PAYMENT_METHODS_PROVIDER_PREFIXES = [
+  "pp_stripe_",
+  "pp_adyen_",
+  "pp_medusa-payments_",
+]
 
-  if (process.env.ADYEN_API_KEY) {
-    return "pp_adyen_adyen"
-  }
+export async function getSavedPaymentMethodsProviderId(
+  container: MedusaContainer
+): Promise<string | undefined> {
+  const providers = await container
+    .resolve(Modules.PAYMENT)
+    .listPaymentProviders({ is_enabled: true }, { select: ["id"] })
 
-  const [paymentAccount] = (process.env.MEDUSA_CLOUD_PAYMENT_ACCOUNTS ?? "")
-    .split(",")
-    .map((account) => account.trim())
-    .filter(Boolean)
-
-  if (process.env.MEDUSA_CLOUD_PAYMENTS_ENDPOINT && paymentAccount) {
-    return `pp_medusa-payments_${paymentAccount}`
+  for (const prefix of SAVED_PAYMENT_METHODS_PROVIDER_PREFIXES) {
+    const provider = providers.find(({ id }) => id.startsWith(prefix))
+    if (provider) {
+      return provider.id
+    }
   }
 
   return undefined
@@ -35,8 +38,10 @@ export function isAdyenProvider(providerId?: string): boolean {
   return !!providerId?.startsWith("pp_adyen_")
 }
 
-export function isSavedPaymentMethodsEnabled(): boolean {
-  return !!getSavedPaymentMethodsProviderId()
+export async function isSavedPaymentMethodsEnabled(
+  container: MedusaContainer
+): Promise<boolean> {
+  return !!(await getSavedPaymentMethodsProviderId(container))
 }
 
 /**
@@ -59,7 +64,8 @@ export async function retrieveCompanyAccountHolder(
     return { accountHolder: undefined, staleAccountHolder: undefined }
   }
 
-  return accountHolder.provider_id === getSavedPaymentMethodsProviderId()
+  return accountHolder.provider_id ===
+    (await getSavedPaymentMethodsProviderId(container))
     ? { accountHolder, staleAccountHolder: undefined }
     : { accountHolder: undefined, staleAccountHolder: accountHolder }
 }

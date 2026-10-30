@@ -106,9 +106,12 @@ export async function getCompanySetupStatus(
 
   const hasInvitedEmployee = pendingInviteCount > 0 || employees.length > 1
 
-  // Check saved payment methods (only if Stripe or Medusa Payments is configured)
+  // Check saved payment methods (only if a provider that saves them is registered)
+  const savedPaymentMethodsEnabled = await isSavedPaymentMethodsEnabled(
+    container
+  )
   let hasPaymentMethod = false
-  if (isSavedPaymentMethodsEnabled()) {
+  if (savedPaymentMethodsEnabled) {
     try {
       const { accountHolder } = await retrieveCompanyAccountHolder(
         container,
@@ -121,7 +124,7 @@ export async function getCompanySetupStatus(
     }
   }
 
-  const stepDefinitions: StepDefinition[] = isSavedPaymentMethodsEnabled()
+  const stepDefinitions: StepDefinition[] = savedPaymentMethodsEnabled
     ? [...BASE_STEP_DEFINITIONS.slice(0, 2), PAYMENT_METHOD_STEP, BASE_STEP_DEFINITIONS[2]]
     : BASE_STEP_DEFINITIONS
 

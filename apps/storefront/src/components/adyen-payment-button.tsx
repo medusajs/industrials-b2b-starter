@@ -79,7 +79,8 @@ const AdyenPaymentButton = ({
       return undefined
     } catch {
       const { cart: updated } = await sdk.store.cart.retrieve(cart.id, {
-        fields: "*payment_collection.payment_sessions",
+        fields:
+          "id,payment_collection.id,payment_collection.payment_sessions.id,payment_collection.payment_sessions.provider_id,payment_collection.payment_sessions.status,payment_collection.payment_sessions.data",
       })
       const updatedSession = updated.payment_collection?.payment_sessions?.find(
         (s) => isAdyen(s.provider_id)

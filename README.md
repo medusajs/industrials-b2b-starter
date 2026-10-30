@@ -123,12 +123,9 @@ The repo is a pnpm workspace orchestrated by [Turborepo](https://turborepo.com).
 | `COOKIE_SECRET` | Secret used to sign cookies |
 | `STRIPE_API_KEY` | Stripe secret key. Enables Stripe payments when set |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
-| `ADYEN_API_KEY` | Adyen API key. Enables Adyen payments when set, used for company payment methods unless Stripe is set |
-| `ADYEN_MERCHANT_ACCOUNT` | Adyen merchant account |
-| `ADYEN_HMAC_KEY` | HMAC key of the Adyen standard webhook, pointed to `{backend_url}/hooks/payment/adyen_adyen` |
-| `ADYEN_ENVIRONMENT` | Adyen environment, `TEST` or `LIVE` |
-| `ADYEN_LIVE_ENDPOINT_URL_PREFIX` | Adyen live endpoint prefix, required in `LIVE` |
 | `SKIP_INITIAL_SEED` | Set to `true` to skip seeding the demo data |
+
+Adyen isn't registered by default. To use it, add the `@medusajs/medusa/payment-adyen` provider to the payment module in `apps/backend/medusa-config.ts`, and point a standard webhook in the Adyen Customer Area to `{backend_url}/hooks/payment/adyen_{id}`, where `{id}` is the provider's ID. Company payment methods are saved with Adyen when it's registered and Stripe isn't.
 
 ### Storefront
 

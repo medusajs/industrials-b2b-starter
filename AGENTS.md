@@ -95,7 +95,7 @@ Do not use these, they run nothing or fail:
 
 ## Environment
 
-- Backend: copy `apps/backend/.env.template` to `apps/backend/.env`. Stripe is enabled only when `STRIPE_API_KEY` is set, and Adyen only when `ADYEN_API_KEY` is set. Company payment methods are saved with Stripe, then Adyen, then Medusa Payments, whichever is configured first (`src/utils/saved-payment-methods.ts`). `SKIP_INITIAL_SEED=true` skips the demo seed. Tests read `apps/backend/.env.test`.
+- Backend: copy `apps/backend/.env.template` to `apps/backend/.env`. Stripe is enabled only when `STRIPE_API_KEY` is set. Adyen isn't registered by default: add the `@medusajs/medusa/payment-adyen` provider to `medusa-config.ts`. Company payment methods are saved with Stripe, then Adyen, then Medusa Payments, whichever enabled provider is registered first (`src/utils/saved-payment-methods.ts`). `SKIP_INITIAL_SEED=true` skips the demo seed. Tests read `apps/backend/.env.test`.
 - Storefront: copy `apps/storefront/.env.example` to `apps/storefront/.env`. Needs `VITE_MEDUSA_BACKEND_URL`, `VITE_MEDUSA_PUBLISHABLE_KEY`, `VITE_STRIPE_PUBLISHABLE_KEY` when Stripe is on, and `VITE_ADYEN_CLIENT_KEY` when Adyen is on.
 
 ## Medusa Package Docs (node_modules)

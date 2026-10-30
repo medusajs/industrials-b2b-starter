@@ -92,7 +92,7 @@ const createAccountHolderStep = createStep(
     input: { company_id: string; company_email: string },
     { container }
   ) => {
-    const providerId = getSavedPaymentMethodsProviderId()
+    const providerId = await getSavedPaymentMethodsProviderId(container)
     if (!providerId) {
       return new StepResponse({ skipped: true }, null)
     }

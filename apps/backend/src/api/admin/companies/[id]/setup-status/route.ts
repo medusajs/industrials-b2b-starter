@@ -42,8 +42,11 @@ export async function GET(
     (addr: any) => addr.is_default_billing
   )
 
+  const savedPaymentMethodsEnabled = await isSavedPaymentMethodsEnabled(
+    req.scope
+  )
   let hasPaymentMethod = false
-  if (isSavedPaymentMethodsEnabled()) {
+  if (savedPaymentMethodsEnabled) {
     try {
       const { accountHolder } = await retrieveCompanyAccountHolder(
         req.scope,
@@ -67,7 +70,7 @@ export async function GET(
       label: "Billing address",
       completed: hasBillingAddress,
     },
-    ...(isSavedPaymentMethodsEnabled()
+    ...(savedPaymentMethodsEnabled
       ? [
           {
             key: "payment_method",

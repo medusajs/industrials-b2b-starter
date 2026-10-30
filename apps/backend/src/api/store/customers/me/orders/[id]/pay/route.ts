@@ -45,7 +45,9 @@ export const POST = async (
       "payment_collections.id",
       "payment_collections.status",
       "payment_collections.amount",
-      "payment_collections.payment_sessions.*",
+      "payment_collections.payment_sessions.id",
+      "payment_collections.payment_sessions.status",
+      "payment_collections.payment_sessions.provider_id",
     ],
     filters: { id: orderId },
   })
