@@ -5,9 +5,11 @@ export const stripePublishableKey =
 export const medusaPaymentsPublishableKey =
   import.meta.env.VITE_MEDUSA_PAYMENTS_PUBLISHABLE_KEY || ""
 
-// Payment methods can be saved with your own Stripe account or Medusa Payments.
+// Payment methods can be saved with your own Stripe account, Medusa Payments, or Adyen.
 export const isCardPaymentsEnabled = !!(
-  stripePublishableKey || medusaPaymentsPublishableKey
+  stripePublishableKey ||
+  medusaPaymentsPublishableKey ||
+  import.meta.env.VITE_ADYEN_CLIENT_KEY
 )
 
 // loadStripe should only be called once per configuration, so we cache the promises.

@@ -1,6 +1,6 @@
 import React from "react"
 import { Cash, CreditCard } from "@medusajs/icons"
-import { isMedusaPayments } from "@/lib/utils/checkout"
+import { isAdyen, isMedusaPayments } from "@/lib/utils/checkout"
 
 /* Map of payment provider_id to their title and icon. Add in any payment providers you want to use. */
 export const paymentMethodsData: Record<
@@ -23,6 +23,11 @@ const medusaPaymentsInfo = {
   icon: <CreditCard />,
 }
 
+const adyenInfo = {
+  title: "Card, Apple Pay, or Google Pay",
+  icon: <CreditCard />,
+}
+
 export const getPaymentMethodInfo = (providerId?: string) => {
   if (!providerId) {
     return undefined
@@ -30,6 +35,10 @@ export const getPaymentMethodInfo = (providerId?: string) => {
 
   if (isMedusaPayments(providerId)) {
     return medusaPaymentsInfo
+  }
+
+  if (isAdyen(providerId)) {
+    return adyenInfo
   }
 
   return paymentMethodsData[providerId]

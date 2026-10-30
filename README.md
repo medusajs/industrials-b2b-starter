@@ -46,7 +46,7 @@ A ready-to-launch B2B store for industrial equipment and parts, built with Medus
 - Quote requests that merchants review and respond to from the Medusa Admin
 - Company and quote management in the Medusa Admin
 - Product search, quick reorder, and order history
-- Cart and checkout with optional Stripe payments
+- Cart and checkout with optional Stripe or Adyen payments
 - Order confirmation emails
 - Demo data seeded automatically on the first migration
 
@@ -123,6 +123,11 @@ The repo is a pnpm workspace orchestrated by [Turborepo](https://turborepo.com).
 | `COOKIE_SECRET` | Secret used to sign cookies |
 | `STRIPE_API_KEY` | Stripe secret key. Enables Stripe payments when set |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
+| `ADYEN_API_KEY` | Adyen API key. Enables Adyen payments when set, used for company payment methods unless Stripe is set |
+| `ADYEN_MERCHANT_ACCOUNT` | Adyen merchant account |
+| `ADYEN_HMAC_KEY` | HMAC key of the Adyen standard webhook, pointed to `{backend_url}/hooks/payment/adyen_adyen` |
+| `ADYEN_ENVIRONMENT` | Adyen environment, `TEST` or `LIVE` |
+| `ADYEN_LIVE_ENDPOINT_URL_PREFIX` | Adyen live endpoint prefix, required in `LIVE` |
 | `SKIP_INITIAL_SEED` | Set to `true` to skip seeding the demo data |
 
 ### Storefront
@@ -132,6 +137,8 @@ The repo is a pnpm workspace orchestrated by [Turborepo](https://turborepo.com).
 | `VITE_MEDUSA_BACKEND_URL` | URL of the Medusa backend |
 | `VITE_MEDUSA_PUBLISHABLE_KEY` | Publishable API key of the store's sales channel |
 | `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key, required when Stripe is enabled |
+| `VITE_ADYEN_CLIENT_KEY` | Adyen client key, required when Adyen is enabled |
+| `VITE_ADYEN_ENVIRONMENT` | Adyen environment, `test` or `live` |
 
 ## Building with AI Agents
 

@@ -4,6 +4,7 @@ loadEnv(process.env.NODE_ENV || "development", process.cwd());
 
 const stripeApiKey = process.env.STRIPE_API_KEY;
 const isStripeConfigured = !!stripeApiKey;
+const isAdyenConfigured = !!process.env.ADYEN_API_KEY;
 
 module.exports = defineConfig({
   admin: {
@@ -61,6 +62,22 @@ module.exports = defineConfig({
                   options: {
                     apiKey: stripeApiKey,
                     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+                  },
+                },
+              ]
+            : []),
+          ...(isAdyenConfigured
+            ? [
+                {
+                  resolve: "@medusajs/medusa/payment-adyen",
+                  id: "adyen",
+                  options: {
+                    apiKey: process.env.ADYEN_API_KEY,
+                    merchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT,
+                    hmacKey: process.env.ADYEN_HMAC_KEY,
+                    environment: process.env.ADYEN_ENVIRONMENT,
+                    liveEndpointUrlPrefix:
+                      process.env.ADYEN_LIVE_ENDPOINT_URL_PREFIX,
                   },
                 },
               ]

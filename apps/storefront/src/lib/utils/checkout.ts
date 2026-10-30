@@ -36,6 +36,14 @@ export const isStripe = (providerId?: string) => {
   )
 }
 
+/*
+ * Adyen registers its provider with the ID `pp_adyen_{id}`, where `{id}` is the ID set in
+ * `medusa-config.ts`. Its Drop-in offers cards, Apple Pay, and Google Pay.
+ */
+export const isAdyen = (providerId?: string) => {
+  return !!providerId?.startsWith("pp_adyen_")
+}
+
 export const isManual = (providerId?: string) => {
   return providerId?.startsWith("pp_system_default") || providerId === "manual"
 }

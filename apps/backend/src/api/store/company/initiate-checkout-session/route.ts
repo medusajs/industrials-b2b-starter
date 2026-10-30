@@ -13,7 +13,8 @@ import { retrieveCompanyAccountHolder } from "../../../../utils/saved-payment-me
 const InitiateSessionSchema = z.object({
   cart_id: z.string(),
   provider_id: z.string(),
-  payment_method_id: z.string(),
+  // Adyen's Drop-in lists the company's payment methods itself, so the session is created without one.
+  payment_method_id: z.string().optional(),
 })
 
 export async function POST(
@@ -111,9 +112,9 @@ export async function POST(
       provider_id: body.provider_id,
       amount: paymentCollection.amount,
       currency_code: cart.currency_code,
-      data: {
-        payment_method: body.payment_method_id,
-      },
+      data: body.payment_method_id
+        ? { payment_method: body.payment_method_id }
+        : {},
       context: {
         account_holder: {
           id: accountHolder.id,

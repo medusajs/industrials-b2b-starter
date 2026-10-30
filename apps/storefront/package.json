@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@adyen/adyen-web": "^6.46.0",
     "@medusajs/icons": "2.22.2",
     "@medusajs/instantsearch-adapter": "2.22.2",
     "@medusajs/js-sdk": "2.22.2",

@@ -1,5 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { getPaymentMethodInfo } from "@/lib/constants/payment-methods"
+import {
+  cardBrandLabel,
+  getSavedCardDetails,
+  type SavedPaymentMethod,
+} from "@/lib/utils/saved-payment-methods"
 import { Link, useParams, useNavigate } from "@tanstack/react-router"
 import { useAuth } from "@/lib/hooks/use-auth"
 import {
@@ -49,36 +54,6 @@ interface CompanyAddressData {
   postal_code: string
   country_code: string
   phone: string | null
-}
-
-interface SavedPaymentMethod {
-  id: string
-  /** The Stripe or Medusa Payments provider the payment method is saved with. */
-  provider_id: string
-  data: {
-    id: string
-    card?: {
-      brand: string
-      last4: string
-      exp_month: number
-      exp_year: number
-    }
-    type?: string
-    [key: string]: unknown
-  }
-}
-
-function cardBrandLabel(brand: string): string {
-  const brands: Record<string, string> = {
-    visa: "Visa",
-    mastercard: "Mastercard",
-    amex: "American Express",
-    discover: "Discover",
-    diners: "Diners Club",
-    jcb: "JCB",
-    unionpay: "UnionPay",
-  }
-  return brands[brand] || brand.charAt(0).toUpperCase() + brand.slice(1)
 }
 
 function CompanyAddressSelector({
@@ -776,7 +751,7 @@ export default function OrderPaymentPage() {
                 <div className="space-y-3">
                   <p className="text-sm font-medium text-gray-700">Select a company payment method</p>
                   {savedPaymentMethods.map((method) => {
-                    const card = method.data?.card
+                    const card = getSavedCardDetails(method)
                     const isSelected = selectedSavedPaymentId === method.data.id
                     return (
                       <button
@@ -798,7 +773,7 @@ export default function OrderPaymentPage() {
                           </p>
                           {card && (
                             <p className="text-xs text-gray-500 mt-0.5">
-                              Expires {String(card.exp_month).padStart(2, "0")}/{card.exp_year}
+                              Expires {String(card.expMonth).padStart(2, "0")}/{card.expYear}
                             </p>
                           )}
                         </div>
@@ -906,7 +881,7 @@ export default function OrderPaymentPage() {
                 {selectedSavedPaymentId ? (
                   (() => {
                     const saved = savedPaymentMethods.find((m) => m.data.id === selectedSavedPaymentId)
-                    const card = saved?.data?.card
+                    const card = saved && getSavedCardDetails(saved)
                     return card ? (
                       <div className="flex items-center gap-3">
                         <CreditCard className="w-5 h-5 text-gray-500" />
@@ -920,10 +895,8 @@ export default function OrderPaymentPage() {
                   })()
                 ) : (
                   <p className="text-gray-700">
-                    {selectedPaymentMethod?.includes("stripe")
-                      ? "Credit Card (Stripe)"
-                      : getPaymentMethodInfo(selectedPaymentMethod)?.title ||
-                        "Manual Payment"}
+                    {getPaymentMethodInfo(selectedPaymentMethod)?.title ||
+                      "Manual Payment"}
                   </p>
                 )}
               </div>

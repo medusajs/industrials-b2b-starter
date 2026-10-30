@@ -5,10 +5,16 @@ import type {
 import { MedusaError, Modules } from "@medusajs/framework/utils"
 import {
   getSavedPaymentMethodsProviderId,
+  isAdyenProvider,
   listCompanyPaymentMethods,
   retrieveAdminCompany,
   retrieveCompanyAccountHolder,
 } from "../../../../utils/saved-payment-methods"
+
+type SavePaymentMethodRequestBody = {
+  /** With Adyen, the card details collected by Adyen's Card component (`state.data.paymentMethod`). */
+  payment_method?: Record<string, unknown>
+}
 import { createCompanyAccountHolderWorkflow } from "../../../../workflows/create-company-account-holder"
 
 export async function GET(
@@ -23,12 +29,15 @@ export async function GET(
 
   res.json({
     payment_methods: await listCompanyPaymentMethods(req.scope, accountHolder),
+    // The storefront collects card details differently for each provider.
+    provider_id: getSavedPaymentMethodsProviderId(),
   })
 }
 
-// Starts saving a card, which the storefront confirms with Stripe.js on the Stripe account the response names.
+// With Stripe and Medusa Payments, starts saving a card, which the storefront confirms with Stripe.js on the Stripe
+// account the response names. With Adyen, saves the card collected by Adyen's Card component.
 export async function POST(
-  req: AuthenticatedMedusaRequest,
+  req: AuthenticatedMedusaRequest<SavePaymentMethodRequestBody>,
   res: MedusaResponse
 ) {
   const providerId = getSavedPaymentMethodsProviderId()
@@ -55,6 +64,31 @@ export async function POST(
     })
 
     accountHolder = result
+  }
+
+  if (isAdyenProvider(accountHolder.provider_id)) {
+    if (!req.body?.payment_method) {
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        "Enter the card details to save"
+      )
+    }
+
+    const paymentMethod = await req.scope
+      .resolve(Modules.PAYMENT)
+      .createPaymentMethods({
+        provider_id: accountHolder.provider_id,
+        context: {
+          account_holder: {
+            data: { id: accountHolder.data?.id },
+          },
+        },
+        // Company cards are charged later, eg. when an order is approved.
+        data: { payment_method: req.body.payment_method, usage: "off_session" },
+      })
+
+    res.json({ payment_method: paymentMethod })
+    return
   }
 
   const paymentMethodSession = await req.scope

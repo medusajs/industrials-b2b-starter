@@ -6,10 +6,16 @@ import {
   useInitiateCartPaymentSession,
 } from "@/lib/hooks/use-checkout"
 import {
+  isAdyen,
   isStripe as isStripeFunc,
   getActivePaymentSession,
   isPaidWithGiftCard,
 } from "@/lib/utils/checkout"
+import {
+  cardBrandLabel,
+  getSavedCardDetails,
+  type SavedPaymentMethod,
+} from "@/lib/utils/saved-payment-methods"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { sdk } from "@/lib/utils/sdk"
 import { getStoredCart } from "@/lib/utils/cart"
@@ -19,41 +25,11 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
 import { useCallback, useEffect, useState } from "react"
 import { CreditCard } from "@medusajs/icons"
 
-interface SavedPaymentMethod {
-  id: string
-  /** The Stripe or Medusa Payments provider the payment method is saved with. */
-  provider_id: string
-  data: {
-    id: string
-    card?: {
-      brand: string
-      last4: string
-      exp_month: number
-      exp_year: number
-    }
-    type?: string
-    [key: string]: unknown
-  }
-}
-
 interface PaymentStepProps {
   cart: HttpTypes.StoreCart
   onNext: () => void
   onBack: () => void
   onPaymentDetailsComplete?: (complete: boolean) => void
-}
-
-function cardBrandLabel(brand: string): string {
-  const brands: Record<string, string> = {
-    visa: "Visa",
-    mastercard: "Mastercard",
-    amex: "American Express",
-    discover: "Discover",
-    diners: "Diners Club",
-    jcb: "JCB",
-    unionpay: "UnionPay",
-  }
-  return brands[brand] || brand.charAt(0).toUpperCase() + brand.slice(1)
 }
 
 const useInitiateCompanyPaymentSession = () => {
@@ -65,7 +41,7 @@ const useInitiateCompanyPaymentSession = () => {
       payment_method_id,
     }: {
       provider_id: string
-      payment_method_id: string
+      payment_method_id?: string
     }) => {
       const cartId = getStoredCart()
       if (!cartId) throw new Error("No cart found")
@@ -102,7 +78,10 @@ const PaymentStep = ({
   const initiatePaymentSessionMutation = useInitiateCartPaymentSession()
   const initiateCompanySessionMutation = useInitiateCompanyPaymentSession()
 
-  const { data: savedPaymentMethods = [] } = useQuery({
+  const {
+    data: savedPaymentMethods = [],
+    isFetched: savedPaymentMethodsFetched,
+  } = useQuery({
     queryKey: ["company-checkout-payment-methods"],
     queryFn: async () => {
       const response = await sdk.client.fetch<{ payment_methods: SavedPaymentMethod[] }>(
@@ -115,6 +94,10 @@ const PaymentStep = ({
   })
 
   const hasSavedMethods = savedPaymentMethods.length > 0
+  // Adyen's Drop-in lists the company's saved cards itself, once its session is created with the
+  // company's account holder.
+  const showSavedMethods =
+    hasSavedMethods && !isAdyen(savedPaymentMethods[0].provider_id)
   const activeSession = getActivePaymentSession(cart)
 
   const [error, setError] = useState<string | null>(null)
@@ -148,7 +131,7 @@ const PaymentStep = ({
   )
 
   const initiateCompanySession = useCallback(
-    async (providerId: string, paymentMethodId: string) => {
+    async (providerId: string, paymentMethodId?: string) => {
       initiateCompanySessionMutation.mutateAsync(
         { provider_id: providerId, payment_method_id: paymentMethodId },
         {
@@ -163,15 +146,27 @@ const PaymentStep = ({
     [initiateCompanySessionMutation]
   )
 
+  // Adyen sessions are created with the company's account holder when it has saved cards, so Drop-in offers them.
+  const initiateSession = useCallback(
+    async (method: string) => {
+      if (isAdyen(method) && hasSavedMethods) {
+        return initiateCompanySession(method)
+      }
+
+      return initiatePaymentSession(method)
+    },
+    [hasSavedMethods, initiateCompanySession, initiatePaymentSession]
+  )
+
   const handlePaymentMethodChange = useCallback(
     async (method: string) => {
       setError(null)
       setSelectedPaymentMethod(method)
       setSelectedSavedMethodId(null)
       setIsPaymentDetailsComplete(false)
-      initiatePaymentSession(method)
+      initiateSession(method)
     },
-    [initiatePaymentSession]
+    [initiateSession]
   )
 
   const handleSavedMethodSelect = useCallback(
@@ -198,14 +193,20 @@ const PaymentStep = ({
 
   // Auto-select first saved method for company employees
   useEffect(() => {
-    if (hasSavedMethods && !selectedSavedMethodId && !selectedPaymentMethod) {
+    if (showSavedMethods && !selectedSavedMethodId && !selectedPaymentMethod) {
       handleSavedMethodSelect(savedPaymentMethods[0])
     }
-  }, [hasSavedMethods, savedPaymentMethods, selectedSavedMethodId, selectedPaymentMethod, handleSavedMethodSelect])
+  }, [showSavedMethods, savedPaymentMethods, selectedSavedMethodId, selectedPaymentMethod, handleSavedMethodSelect])
 
-  // Fallback: auto-select first payment method if no saved methods
+  // Fallback: auto-select first payment method if no saved methods. It waits for the saved methods, as the
+  // session for Adyen is created differently when the company has some.
   useEffect(() => {
-    if (!hasSavedMethods && !selectedPaymentMethod && availablePaymentMethods?.length > 0) {
+    if (
+      (!employee || savedPaymentMethodsFetched) &&
+      !showSavedMethods &&
+      !selectedPaymentMethod &&
+      availablePaymentMethods?.length > 0
+    ) {
       const firstMethod = availablePaymentMethods[0]
       if (firstMethod) {
         setSelectedPaymentMethod(firstMethod.id)
@@ -213,7 +214,9 @@ const PaymentStep = ({
       }
     }
   }, [
-    hasSavedMethods,
+    employee,
+    savedPaymentMethodsFetched,
+    showSavedMethods,
     availablePaymentMethods,
     selectedPaymentMethod,
     handlePaymentMethodChange,
@@ -244,14 +247,14 @@ const PaymentStep = ({
       if (selectedSavedMethodId) {
         await initiateCompanySession(selectedPaymentMethod, selectedSavedMethodId)
       } else {
-        await initiatePaymentSession(selectedPaymentMethod)
+        await initiateSession(selectedPaymentMethod)
       }
     }
 
     onNext()
-  }, [selectedPaymentMethod, activeSession, onNext, initiatePaymentSession, initiateCompanySession, selectedSavedMethodId])
+  }, [selectedPaymentMethod, activeSession, onNext, initiateSession, initiateCompanySession, selectedSavedMethodId])
 
-  const canProceed = hasSavedMethods && selectedSavedMethodId
+  const canProceed = showSavedMethods && selectedSavedMethodId
     ? !!activeSession
     : isStripe
       ? isPaymentDetailsComplete && !!activeSession
@@ -259,11 +262,11 @@ const PaymentStep = ({
 
   return (
     <div className="flex flex-col gap-8">
-      {!paidByGiftcard && hasSavedMethods && (
+      {!paidByGiftcard && showSavedMethods && (
         <div className="space-y-3">
           <p className="text-sm font-medium text-zinc-700">Select a company payment method</p>
           {savedPaymentMethods.map((method) => {
-            const card = method.data?.card
+            const card = getSavedCardDetails(method)
             const isSelected = selectedSavedMethodId === method.data.id
             return (
               <button
@@ -285,7 +288,7 @@ const PaymentStep = ({
                   </p>
                   {card && (
                     <p className="text-xs text-zinc-500 mt-0.5">
-                      Expires {String(card.exp_month).padStart(2, "0")}/{card.exp_year}
+                      Expires {String(card.expMonth).padStart(2, "0")}/{card.expYear}
                     </p>
                   )}
                 </div>
@@ -300,7 +303,7 @@ const PaymentStep = ({
         </div>
       )}
 
-      {!paidByGiftcard && !hasSavedMethods && (availablePaymentMethods?.length ?? 0) > 0 && (
+      {!paidByGiftcard && !showSavedMethods && (availablePaymentMethods?.length ?? 0) > 0 && (
         <>
           {availablePaymentMethods.map((paymentMethod) => (
             <div key={paymentMethod.id}>

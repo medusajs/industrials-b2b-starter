@@ -7,12 +7,16 @@ import {
 } from "@medusajs/framework/utils"
 
 /**
- * Company payment methods are saved with your own Stripe account when it's configured, and otherwise with Medusa
- * Payments on Medusa Cloud, which registers a provider per payment account.
+ * Company payment methods are saved with your own Stripe account when it's configured, then Adyen, and otherwise with
+ * Medusa Payments on Medusa Cloud, which registers a provider per payment account.
  */
 export function getSavedPaymentMethodsProviderId(): string | undefined {
   if (process.env.STRIPE_API_KEY) {
     return "pp_stripe_stripe"
+  }
+
+  if (process.env.ADYEN_API_KEY) {
+    return "pp_adyen_adyen"
   }
 
   const [paymentAccount] = (process.env.MEDUSA_CLOUD_PAYMENT_ACCOUNTS ?? "")
@@ -25,6 +29,10 @@ export function getSavedPaymentMethodsProviderId(): string | undefined {
   }
 
   return undefined
+}
+
+export function isAdyenProvider(providerId?: string): boolean {
+  return !!providerId?.startsWith("pp_adyen_")
 }
 
 export function isSavedPaymentMethodsEnabled(): boolean {

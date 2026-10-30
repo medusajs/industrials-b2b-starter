@@ -95,8 +95,8 @@ Do not use these, they run nothing or fail:
 
 ## Environment
 
-- Backend: copy `apps/backend/.env.template` to `apps/backend/.env`. Stripe is enabled only when `STRIPE_API_KEY` is set. `SKIP_INITIAL_SEED=true` skips the demo seed. Tests read `apps/backend/.env.test`.
-- Storefront: copy `apps/storefront/.env.example` to `apps/storefront/.env`. Needs `VITE_MEDUSA_BACKEND_URL`, `VITE_MEDUSA_PUBLISHABLE_KEY`, and `VITE_STRIPE_PUBLISHABLE_KEY` when Stripe is on.
+- Backend: copy `apps/backend/.env.template` to `apps/backend/.env`. Stripe is enabled only when `STRIPE_API_KEY` is set, and Adyen only when `ADYEN_API_KEY` is set. Company payment methods are saved with Stripe, then Adyen, then Medusa Payments, whichever is configured first (`src/utils/saved-payment-methods.ts`). `SKIP_INITIAL_SEED=true` skips the demo seed. Tests read `apps/backend/.env.test`.
+- Storefront: copy `apps/storefront/.env.example` to `apps/storefront/.env`. Needs `VITE_MEDUSA_BACKEND_URL`, `VITE_MEDUSA_PUBLISHABLE_KEY`, `VITE_STRIPE_PUBLISHABLE_KEY` when Stripe is on, and `VITE_ADYEN_CLIENT_KEY` when Adyen is on.
 
 ## Medusa Package Docs (node_modules)
 
@@ -115,7 +115,7 @@ Packages this repo depends on:
 | Package | Read it for |
 |---------|-------------|
 | `@medusajs/framework` | API routes, middlewares, workflows-sdk, modules, data models, links, DI, `utils`/`types`/`zod` subpaths |
-| `@medusajs/medusa` | Commerce modules, `core-flows`, payment-stripe provider, `medusa-config` module paths |
+| `@medusajs/medusa` | Commerce modules, `core-flows`, payment-stripe and payment-adyen providers, `medusa-config` module paths |
 | `@medusajs/core-flows` | Built-in workflows and hooks (via `@medusajs/medusa/core-flows`) |
 | `@medusajs/cli` | `medusa develop`, `build`, `db:*`, `user`, `exec`, `lint` |
 | `@medusajs/admin-sdk` | `defineWidgetConfig`, `defineRouteConfig` |
