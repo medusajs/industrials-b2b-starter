@@ -79,8 +79,8 @@ const AdyenPaymentButton = ({
       return undefined
     } catch {
       const { cart: updated } = await sdk.store.cart.retrieve(cart.id, {
-        fields:
-          "id,payment_collection.id,payment_collection.payment_sessions.id,payment_collection.payment_sessions.provider_id,payment_collection.payment_sessions.status,payment_collection.payment_sessions.data",
+        // Medusa Cloud's firewall rejects a `fields` query that names `payment_collection` more than once.
+        fields: "*payment_collection.payment_sessions",
       })
       const updatedSession = updated.payment_collection?.payment_sessions?.find(
         (s) => isAdyen(s.provider_id)

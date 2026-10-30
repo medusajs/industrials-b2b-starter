@@ -119,8 +119,9 @@ export default function OrderPaymentPage() {
 
   const { data: order, isLoading: orderLoading, refetch: refetchOrder } = useOrder({
     order_id: orderId,
-    fields:
-      "*items,*items.variant,*items.product,*shipping_address,*billing_address,*shipping_methods,*payment_collections,*payment_collections.payment_sessions,region_id,currency_code,total,subtotal,item_subtotal,shipping_total,tax_total,discount_total",
+    // Adds to the default fields, which already include the payment collections. Medusa Cloud's
+    // firewall rejects a `fields` query that names `payment_collection` more than once.
+    fields: "*items.product,*payment_collections.payment_sessions",
   })
 
   const { data: availablePaymentMethods = [] } = useCartPaymentMethods({
