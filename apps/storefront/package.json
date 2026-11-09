@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "@adyen/adyen-web": "^6.46.0",
-    "@medusajs/icons": "2.22.4",
-    "@medusajs/instantsearch-adapter": "2.22.4",
-    "@medusajs/js-sdk": "2.22.4",
+    "@medusajs/icons": "2.22.6",
+    "@medusajs/instantsearch-adapter": "2.22.6",
+    "@medusajs/js-sdk": "2.22.6",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-navigation-menu": "^1.2.14",
     "@radix-ui/react-select": "^2.2.6",
@@ -40,7 +40,7 @@
   "devDependencies": {
     "@eslint/js": "9.33.0",
     "@medusajs-ai/tags": "next",
-    "@medusajs/types": "2.22.4",
+    "@medusajs/types": "2.22.6",
     "@tailwindcss/vite": "4.1.4",
     "@tanstack/react-router-devtools": "^1.144.0",
     "@types/lodash-es": "4.17.12",
