@@ -35,9 +35,9 @@ export function CompanySetupStatus({ companyId }: { companyId: string }) {
           Setup Status
         </Text>
         <div className="animate-pulse space-y-2">
-          <div className="h-4 bg-ui-bg-subtle rounded w-3/4" />
-          <div className="h-4 bg-ui-bg-subtle rounded w-1/2" />
-          <div className="h-4 bg-ui-bg-subtle rounded w-2/3" />
+          <div className="h-4 bg-ui-bg-subtle rounded-sm w-3/4" />
+          <div className="h-4 bg-ui-bg-subtle rounded-sm w-1/2" />
+          <div className="h-4 bg-ui-bg-subtle rounded-sm w-2/3" />
         </div>
       </div>
     )

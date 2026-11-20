@@ -121,7 +121,7 @@ export const ImageUpload = ({
           <button
             type="button"
             onClick={handleRemove}
-            className="absolute top-2 right-2 p-1 rounded-md bg-ui-bg-base border border-ui-border-base shadow-sm hover:bg-ui-bg-base-hover transition-colors"
+            className="absolute top-2 right-2 p-1 rounded-md bg-ui-bg-base border border-ui-border-base shadow-xs hover:bg-ui-bg-base-hover transition-colors"
           >
             <XMark className="w-4 h-4 text-ui-fg-subtle" />
           </button>
