@@ -7,7 +7,11 @@ import { sanitize } from "@/lib/utils/sanitize"
 export const Route = createFileRoute("/$countryCode/checkout")({
   validateSearch: (
     search
-  ): { step: CheckoutStepKey; redirectResult?: string } => {
+  ): {
+    step: CheckoutStepKey
+    redirectResult?: string
+    redirect_status?: string
+  } => {
     let step = search.step
     if (!Object.values(CheckoutStepKey).includes(step as CheckoutStepKey)) {
       step = CheckoutStepKey.ADDRESSES
@@ -19,6 +23,12 @@ export const Route = createFileRoute("/$countryCode/checkout")({
       redirectResult:
         typeof search.redirectResult === "string"
           ? search.redirectResult
+          : undefined,
+      // Stripe returns the customer to the review step with `redirect_status` after a redirect, for
+      // example to iDEAL or Klarna.
+      redirect_status:
+        typeof search.redirect_status === "string"
+          ? search.redirect_status
           : undefined,
     }
   },
