@@ -6,8 +6,9 @@ import { getCountryCodeFromPath } from "@/lib/utils/region"
 import { getPaymentErrorMessage } from "@/lib/utils/payment-error"
 import { HttpTypes } from "@medusajs/types"
 import { useStripe, useElements } from "@stripe/react-stripe-js"
-import { useLocation, useNavigate } from "@tanstack/react-router"
-import { useState } from "react"
+import { CheckoutStepKey } from "@/lib/types/global"
+import { useLocation, useNavigate, useSearch } from "@tanstack/react-router"
+import { useEffect, useState } from "react"
 
 type PaymentButtonProps = {
   cart: HttpTypes.StoreCart
@@ -71,6 +72,45 @@ const StripePaymentButton = ({
   )
   const savedPaymentMethodId = activeSession?.data?.payment_method as string | undefined
   const clientSecret = activeSession?.data?.client_secret as string | undefined
+  const { redirect_status: redirectStatus } = useSearch({
+    from: "/$countryCode/checkout",
+  })
+
+  const completeOrder = async () => {
+    const order = await completeOrderMutation.mutateAsync()
+
+    navigate({
+      to: `/${countryCode}/order/${order.id}/confirmed`,
+      replace: true,
+    })
+  }
+
+  // Completes a payment that the customer was redirected back from, for example after iDEAL or Klarna.
+  useEffect(() => {
+    if (!redirectStatus) {
+      return
+    }
+
+    navigate({
+      to: `/${countryCode}/checkout`,
+      search: { step: CheckoutStepKey.REVIEW },
+      replace: true,
+    })
+
+    if (redirectStatus === "failed") {
+      setErrorMessage(
+        "Your payment wasn't completed. Please try again or use a different payment method."
+      )
+      return
+    }
+
+    setSubmitting(true)
+    completeOrder().catch((error) => {
+      setErrorMessage(error instanceof Error ? error.message : "Payment failed")
+      setSubmitting(false)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [redirectStatus])
 
   const handlePayment = async () => {
     if (!stripe) return
@@ -102,7 +142,7 @@ const StripePaymentButton = ({
         const { error } = await stripe.confirmPayment({
           elements,
           confirmParams: {
-            return_url: `${window.location.origin}/${countryCode}/order/confirmed`,
+            return_url: `${window.location.origin}/${countryCode}/checkout?step=${CheckoutStepKey.REVIEW}`,
           },
           redirect: "if_required",
         })
@@ -114,12 +154,7 @@ const StripePaymentButton = ({
         }
       }
 
-      const order = await completeOrderMutation.mutateAsync()
-
-      navigate({
-        to: `/${countryCode}/order/${order.id}/confirmed`,
-        replace: true,
-      })
+      await completeOrder()
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Payment failed"
